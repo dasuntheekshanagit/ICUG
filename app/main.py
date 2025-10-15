@@ -36,9 +36,23 @@ async def predict(payload: PredictInput):
         "input_summary": payload.dict()
     })
 
+# Route for the main prediction page
 @app.get("/", response_class=FileResponse)
 async def index():
-    """Return the static index page."""
-    # Serve the static/index.html file
+    """Return the static index page (Prediction Form)."""
     fp = Path(__file__).parent.parent / "static" / "index.html"
+    return FileResponse(fp)
+
+# Route for the About Us page
+@app.get("/about", response_class=FileResponse)
+async def about():
+    """Return the static about page."""
+    fp = Path(__file__).parent.parent / "static" / "about.html"
+    return FileResponse(fp)
+
+# Route for the Documentation page
+@app.get("/docs", response_class=FileResponse)
+async def docs():
+    """Return the static documentation page."""
+    fp = Path(__file__).parent.parent / "static" / "docs.html"
     return FileResponse(fp)

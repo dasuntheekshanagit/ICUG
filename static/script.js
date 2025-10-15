@@ -19,19 +19,60 @@ async function predict() {
     };
 
     const resEl = document.getElementById('result');
-    resEl.textContent = 'Predicting...';
+    const resContent = document.getElementById('result-content');
+    const predictBtn = document.getElementById('predict');
+    
+    // Show loading state
+    predictBtn.disabled = true;
+    predictBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Predicting...';
+    resEl.classList.remove('d-none');
+    resEl.classList.remove('alert-success', 'alert-warning', 'alert-danger', 'alert-info');
+    resEl.classList.add('alert-info');
+    resContent.innerHTML = '<strong>Processing your request...</strong>';
 
     try {
         const resp = await fetch('/api/predict', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
+        
         if (!resp.ok) throw new Error('Server error ' + resp.status);
+        
         const data = await resp.json();
-        resEl.innerHTML = `<strong>PPGI:</strong> ${data.ppgi}<pre style="max-height:200px;overflow:auto">${JSON.stringify(data.input_summary, null, 2)}</pre>`;
+        const ppgiValue = data.ppgi;
+        
+        // Determine alert type based on PPGI value
+        let alertType = 'alert-success';
+        let interpretation = 'Low glycemic response - Good for blood sugar control';
+        
+        if (ppgiValue > 70) {
+            alertType = 'alert-danger';
+            interpretation = 'High glycemic response - May cause rapid blood sugar spike';
+        } else if (ppgiValue > 55) {
+            alertType = 'alert-warning';
+            interpretation = 'Medium glycemic response - Moderate impact on blood sugar';
+        }
+        
+        resEl.classList.remove('alert-info');
+        resEl.classList.add(alertType);
+        
+        resContent.innerHTML = `
+            <div>
+                <h5 class="alert-heading mb-2">Prediction Result</h5>
+                <p class="mb-2"><strong>Predicted PPGI:</strong> <span class="fs-4 fw-bold">${ppgiValue}</span></p>
+                <p class="mb-0"><em>${interpretation}</em></p>
+            </div>
+        `;
     } catch (err) {
         console.error(err);
-        resEl.textContent = 'Prediction failed: ' + err.message;
+        resEl.classList.remove('alert-info');
+        resEl.classList.add('alert-danger');
+        resContent.innerHTML = `<strong>Error:</strong> ${err.message}`;
+    } finally {
+        // Reset button state
+        predictBtn.disabled = false;
+        predictBtn.innerHTML = '<i class="bi bi-lightning-charge-fill"></i> Predict PPGI';
     }
 }
 
@@ -80,7 +121,14 @@ document.getElementById('food_select').addEventListener('change', (e) => {
 document.getElementById('manual_toggle').addEventListener('change', (e) => {
     const manual = e.target.checked;
     document.getElementById('food_manual_name').style.display = manual ? 'block' : 'none';
-    if (manual) { document.getElementById('food_select').value = ''; }
+    if (manual) { 
+        document.getElementById('food_select').value = ''; 
+        // Clear nutritional values for manual entry
+        document.getElementById('carb').value = 0;
+        document.getElementById('protein').value = 0;
+        document.getElementById('fat').value = 0;
+        document.getElementById('fiber').value = 0;
+    }
 });
 
 // Initialize
