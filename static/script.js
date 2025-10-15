@@ -37,19 +37,25 @@ async function predict() {
 
 document.getElementById('predict').addEventListener('click', predict);
 
-// --- Food data and autofill ---
+// --- Food data and autofill (only user-provided items) ---
 const FOOD_DATA = {
-    "Apple": { "Carb": 14, "Protein": 0.3, "Fat": 0.2, "Dietary fiber": 2.4 },
-    "Banana": { "Carb": 23, "Protein": 1.1, "Fat": 0.3, "Dietary fiber": 2.6 },
-    "Chicken Breast": { "Carb": 0, "Protein": 31, "Fat": 3.6, "Dietary fiber": 0 },
-    "Brown Rice": { "Carb": 23, "Protein": 2.7, "Fat": 0.9, "Dietary fiber": 3.5 },
-    "Broccoli": { "Carb": 7, "Protein": 2.8, "Fat": 0.4, "Dietary fiber": 2.6 }
+    "glucose_solution": { label: "Glucose Solution", "Carb": 100, "Protein": 0, "Fat": 0, "Dietary fiber": 0 },
+    "rice_super_kernel": { label: "Rice - Super kernel", "Carb": 28, "Protein": 2.7, "Fat": 0.3, "Dietary fiber": 0.4 },
+    "rathu_suduru": { label: "Rathu Suduru", "Carb": 26, "Protein": 2.4, "Fat": 0.7, "Dietary fiber": 1.2 },
+    "garlic_bee_honey": { label: "Garlic - Bee honey", "Carb": 82, "Protein": 0.3, "Fat": 0, "Dietary fiber": 0.2 },
+    "white_bread": { label: "White Bread", "Carb": 49, "Protein": 8, "Fat": 3.2, "Dietary fiber": 2.7 },
+    "kurakkan_bread": { label: "Kurakkan Bread", "Carb": 45, "Protein": 7, "Fat": 5, "Dietary fiber": 4 }
 };
 
 function populateFoodDropdown() {
     const sel = document.getElementById('food_select');
-    Object.keys(FOOD_DATA).forEach(name => {
-        const opt = document.createElement('option'); opt.value = name; opt.textContent = name; sel.appendChild(opt);
+    // Replace existing options so only the provided items remain
+    sel.innerHTML = '<option value="">-- Select a food --</option>';
+    Object.entries(FOOD_DATA).forEach(([key, obj]) => {
+        const opt = document.createElement('option');
+        opt.value = key;
+        opt.textContent = obj.label || key;
+        sel.appendChild(opt);
     });
 }
 

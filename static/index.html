@@ -9,6 +9,18 @@
     <body>
         <div class="ppgi-card">
             <h1>Personalized PPGI Prediction</h1>
+            <p class="about-us-text">
+                Welcome to Personalized Postprandial Glycemic Index (PPGI)
+                Prediction – a tool designed to help you understand and manage
+                how your unique personal details influence the glycemic impact
+                of foods in your diet. This web application was developed as
+                part of a final-year undergraduate research project conducted by
+                the Department of Food Science and Technology, Faculty of
+                Agriculture, University of Peradeniya. Our mission is to empower
+                individuals with personalized nutrition insights, moving beyond
+                standard GI tables to provide predictions based on your own
+                data.
+            </p>
 
             <section>
                 <h2>Personal Information</h2>
@@ -40,7 +52,11 @@
                     </div>
                     <div>
                         <label>Birth Place</label>
-                        <input id="birth_place" type="text" />
+                        <input
+                            id="birth_place"
+                            type="text"
+                            placeholder="e.g., Kandy, Sri Lanka"
+                        />
                     </div>
                     <div>
                         <label>Blood Group</label>
@@ -63,27 +79,19 @@
                             <option>Yes - Mother</option>
                             <option>Yes - Father</option>
                             <option>Yes - Father, Mother</option>
+                            <option>Yes - Other</option>
                         </select>
                     </div>
                     <div>
                         <label>Physical Activity</label>
                         <select id="physical_activity">
-                            <option>Sedentary (little or no exercise)</option>
-                            <option>
-                                Lightly active (light exercise/sports 1-3
-                                days/week)
+                            <option value="moderate">
+                                Moderate (Home workouts)
                             </option>
-                            <option>
-                                Moderately active (moderate exercise/sports 3-5
-                                days/week)
+                            <option value="light">
+                                Light (Only Day-to-Day activities)
                             </option>
-                            <option>
-                                Very active (hard exercise/sports 6-7 days a
-                                week)
-                            </option>
-                            <option>
-                                Extra active (very hard exercise/physical job)
-                            </option>
+                            <option value="light_heavy">Light Heavy</option>
                         </select>
                     </div>
                 </div>
@@ -98,6 +106,20 @@
                         <label>Food Item</label>
                         <select id="food_select">
                             <option value="">-- Select a food --</option>
+                            <option value="glucose_solution">
+                                Glucose Solution
+                            </option>
+                            <option value="rice_super_kernel">
+                                Rice - Super kernel
+                            </option>
+                            <option value="rathu_suduru">Rathu Suduru</option>
+                            <option value="garlic_bee_honey">
+                                Garlic - Bee honey
+                            </option>
+                            <option value="white_bread">White Bread</option>
+                            <option value="kurakkan_bread">
+                                Kurakkan Bread
+                            </option>
                         </select>
                         <input
                             id="food_manual_name"
@@ -116,7 +138,13 @@
                     </div>
                     <div>
                         <label>Carbohydrates (g/100g)</label>
-                        <input id="carb" type="number" step="0.1" value="0" />
+                        <input
+                            id="carb"
+                            type="number"
+                            step="0.1"
+                            value="0"
+                            placeholder="e.g., 14.0"
+                        />
                     </div>
                     <div>
                         <label>Protein (g/100g)</label>
@@ -125,15 +153,28 @@
                             type="number"
                             step="0.1"
                             value="0"
+                            placeholder="e.g., 0.3"
                         />
                     </div>
                     <div>
                         <label>Fat (g/100g)</label>
-                        <input id="fat" type="number" step="0.1" value="0" />
+                        <input
+                            id="fat"
+                            type="number"
+                            step="0.1"
+                            value="0"
+                            placeholder="e.g., 0.2"
+                        />
                     </div>
                     <div>
                         <label>Dietary Fiber (g/100g)</label>
-                        <input id="fiber" type="number" step="0.1" value="0" />
+                        <input
+                            id="fiber"
+                            type="number"
+                            step="0.1"
+                            value="0"
+                            placeholder="e.g., 2.4"
+                        />
                     </div>
                 </div>
             </section>
