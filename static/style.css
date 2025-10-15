@@ -1,0 +1,39 @@
+:root{
+  --card-bg: rgba(255,255,255,0.85);
+  --accent: #4facfe;
+  --accent-2: #00f2fe;
+}
+
+body{
+  margin:0; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(135deg,#e0f7fa,#e8f5e9);
+  min-height:100vh;
+  display:flex; align-items:center; justify-content:center; padding:24px;
+}
+
+.ppgi-card{
+  background: var(--card-bg);
+  border-radius:14px;
+  padding:28px;
+  max-width:1100px;
+  width:100%;
+  box-shadow: 0 8px 32px rgba(31,38,135,0.08);
+}
+
+.ppgi-card h1{ margin-top:0; color:#083d77 }
+.small-note{ font-size:12px; color:#666; margin-top:6px }
+.inline{ display:inline-block; margin-left:6px }
+input[type=number], input[type=text], select{ transition: box-shadow .12s, transform .06s }
+input:focus, select:focus{ box-shadow: 0 6px 18px rgba(0,0,0,0.08); transform: translateY(-1px) }
+
+.grid{
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap:12px;
+}
+
+label{ display:block; font-weight:600; margin-bottom:6px; color:#083d77 }
+input, select{ width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(0,0,0,0.08) }
+.actions{ margin-top:18px; display:flex; gap:12px; align-items:center }
+button#predict{ background: linear-gradient(90deg,var(--accent),var(--accent-2)); color:#03396c; padding:10px 16px; border-radius:10px; border:none; font-weight:600 }
+.result{ padding:10px 12px; background:rgba(0,0,0,0.03); border-radius:8px }
+
+@media(max-width:700px){ .ppgi-card{ padding:16px } }
