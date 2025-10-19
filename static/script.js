@@ -21,7 +21,7 @@ async function predict() {
     const resEl = document.getElementById('result');
     const resContent = document.getElementById('result-content');
     const predictBtn = document.getElementById('predict');
-    
+
     // Show loading state
     predictBtn.disabled = true;
     predictBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Predicting...';
@@ -31,21 +31,44 @@ async function predict() {
     resContent.innerHTML = '<strong>Processing your request...</strong>';
 
     try {
-        const resp = await fetch('/api/predict', {
-            method: 'POST', 
+        // Use explicit origin so this works when the static files are served
+        // from a different base path or when the page is loaded from a file.
+        if (location.protocol !== 'http:' && location.protocol !== 'https:') {
+            throw new Error('This page is not served over HTTP. Please run the server and open the app at http://127.0.0.1:8000/');
+        }
+        const url = (window.location && window.location.origin ? window.location.origin : '') + '/api/predict';
+        console.log('Sending predict request to', url, 'payload:', payload);
+
+        const resp = await fetch(url, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         });
-        
-        if (!resp.ok) throw new Error('Server error ' + resp.status);
-        
-        const data = await resp.json();
-        const ppgiValue = data.ppgi;
-        
+        if (!resp.ok) {
+            // Try to get server error details (text) when available
+            let txt = '';
+            try { txt = await resp.text(); } catch (e) { /* ignore */ }
+            throw new Error('Server error ' + resp.status + (txt ? (': ' + txt) : ''));
+        }
+
+        // Parse JSON safely
+        let data;
+        try {
+            data = await resp.json();
+        } catch (e) {
+            const txt = await resp.text().catch(() => '');
+            throw new Error('Invalid JSON response from server' + (txt ? (': ' + txt) : ''));
+        }
+
+        const ppgiValue = data && (data.ppgi ?? data.ppgi_value ?? null);
+        if (ppgiValue === null || ppgiValue === undefined) {
+            throw new Error('Server did not return ppgi in response');
+        }
+
         // Determine alert type based on PPGI value
         let alertType = 'alert-success';
         let interpretation = 'Low glycemic response - Good for blood sugar control';
-        
+
         if (ppgiValue > 70) {
             alertType = 'alert-danger';
             interpretation = 'High glycemic response - May cause rapid blood sugar spike';
@@ -53,10 +76,10 @@ async function predict() {
             alertType = 'alert-warning';
             interpretation = 'Medium glycemic response - Moderate impact on blood sugar';
         }
-        
+
         resEl.classList.remove('alert-info');
         resEl.classList.add(alertType);
-        
+
         resContent.innerHTML = `
             <div>
                 <h5 class="alert-heading mb-2">Prediction Result</h5>
@@ -64,11 +87,15 @@ async function predict() {
                 <p class="mb-0"><em>${interpretation}</em></p>
             </div>
         `;
+        // Ensure the result is visible to the user
+        try { resEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) { }
     } catch (err) {
-        console.error(err);
+        console.error('Prediction failed:', err);
         resEl.classList.remove('alert-info');
         resEl.classList.add('alert-danger');
+        // Show friendly message and the error details
         resContent.innerHTML = `<strong>Error:</strong> ${err.message}`;
+        try { resEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) { }
     } finally {
         // Reset button state
         predictBtn.disabled = false;
@@ -76,7 +103,27 @@ async function predict() {
     }
 }
 
-document.getElementById('predict').addEventListener('click', predict);
+// Log to verify script loaded
+console.log('PPGI script loaded');
+
+// Ensure click handler is attached whether or not DOMContentLoaded already fired
+function onReady(fn) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn);
+    } else {
+        fn();
+    }
+}
+
+onReady(() => {
+    const btn = document.getElementById('predict');
+    if (btn) {
+        btn.addEventListener('click', predict);
+        console.log('Predict button handler attached');
+    } else {
+        console.log('Predict button not found in DOM');
+    }
+});
 
 // --- Food data and autofill (only user-provided items) ---
 const FOOD_DATA = {
@@ -121,8 +168,8 @@ document.getElementById('food_select').addEventListener('change', (e) => {
 document.getElementById('manual_toggle').addEventListener('change', (e) => {
     const manual = e.target.checked;
     document.getElementById('food_manual_name').style.display = manual ? 'block' : 'none';
-    if (manual) { 
-        document.getElementById('food_select').value = ''; 
+    if (manual) {
+        document.getElementById('food_select').value = '';
         // Clear nutritional values for manual entry
         document.getElementById('carb').value = 0;
         document.getElementById('protein').value = 0;
