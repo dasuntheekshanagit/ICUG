@@ -287,3 +287,8 @@ async def last_result_csv():
     filename = f"ppgi_result_{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}.csv"
     headers = {"Content-Disposition": f"attachment; filename={filename}"}
     return StreamingResponse(buf, media_type='text/csv', headers=headers)
+
+# Lightweight health endpoint for readiness/liveness checks
+@app.get("/health")
+async def health():
+    return JSONResponse({"status": "ok"})
