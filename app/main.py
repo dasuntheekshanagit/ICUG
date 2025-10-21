@@ -12,7 +12,6 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
 
 app = FastAPI(title="PPGI FastAPI")
 
@@ -34,7 +33,7 @@ class PredictInput(BaseModel):
     fat: float = 0.0
     dietary_fiber: float = 0.0
 
-_lgb_model: Optional[lgb.Booster] = None
+_lgb_model: Optional[object] = None
 _feature_columns: Optional[list] = None
 _last_result: Optional[dict] = None
 
@@ -71,10 +70,22 @@ def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def _load_lgb_model() -> lgb.Booster:
+def _load_lgb_model():
+    """Lazy-load LightGBM and the model file.
+
+    Raises a RuntimeError with a helpful message if LightGBM or libgomp is missing.
+    """
     global _lgb_model, _feature_columns
     if _lgb_model is not None:
         return _lgb_model
+
+    try:
+        import importlib
+        lgb = importlib.import_module('lightgbm')
+    except Exception as ie:
+        raise RuntimeError(
+            "LightGBM is unavailable in this environment. If deploying on a minimal Linux image, install libgomp (e.g., apt-get install -y libgomp1 or apk add libgomp) or use the provided Dockerfile."
+        ) from ie
 
     # Model path preference: project root then NoteBooks
     root = Path(__file__).parent.parent
@@ -87,7 +98,14 @@ def _load_lgb_model() -> lgb.Booster:
     if model_path is None:
         raise FileNotFoundError('lightgbm_model.txt not found in project root or NoteBooks/')
 
-    model = lgb.Booster(model_file=str(model_path))
+    try:
+        model = lgb.Booster(model_file=str(model_path))
+    except Exception as e:
+        # Common case: libgomp missing in the OS
+        raise RuntimeError(
+            "Failed to load LightGBM model. Ensure system dependency libgomp.so.1 is installed (Debian/Ubuntu: libgomp1, Alpine: libgomp)."
+        ) from e
+
     _lgb_model = model
 
     # If the model has feature_name stored, use it; otherwise will infer later

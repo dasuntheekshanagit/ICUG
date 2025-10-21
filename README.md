@@ -54,3 +54,19 @@ Then build and run locally:
 docker build -t ppgi-app .
 docker run -p 8000:8000 ppgi-app
 ```
+
+### Troubleshooting LightGBM on cloud images
+
+If deployment fails with an error like:
+
+```
+OSError: libgomp.so.1: cannot open shared object file: No such file or directory
+```
+
+Install the OpenMP runtime in your container or build image:
+
+-   Debian/Ubuntu: `apt-get update && apt-get install -y libgomp1`
+-   Alpine Linux: `apk add --no-cache libgomp`
+-   Red Hat/CentOS: `yum install -y libgomp`
+
+Alternatively, use the Dockerfile above, or choose a base image that includes GCC runtime libraries.
