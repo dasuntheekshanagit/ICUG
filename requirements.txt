@@ -3,3 +3,7 @@ uvicorn[standard]
 python-multipart
 pydantic
 Pillow
+httpx
+numpy
+pandas
+lightgbm

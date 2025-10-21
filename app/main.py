@@ -4,6 +4,12 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 import random
 from pathlib import Path
+import os
+from typing import Optional
+
+import numpy as np
+import pandas as pd
+import lightgbm as lgb
 
 app = FastAPI(title="PPGI FastAPI")
 
@@ -25,16 +31,150 @@ class PredictInput(BaseModel):
     fat: float = 0.0
     dietary_fiber: float = 0.0
 
+_lgb_model: Optional[lgb.Booster] = None
+_feature_columns: Optional[list] = None
+
+def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
+    df = df.copy()
+    # Total nutrients and proportions
+    df['Total_Nutrients'] = (
+        df['Carb(g/100g)'] + df['Protien(g/100g)'] + df['Fat(g/100g)'] + df['Dietary Fiber(g/100g)']
+    )
+    df['Total_Nutrients'] = df['Total_Nutrients'].replace(0, 1e-6)
+    df['Carb_Proportion'] = df['Carb(g/100g)'] / df['Total_Nutrients']
+    df['Protien_Proportion'] = df['Protien(g/100g)'] / df['Total_Nutrients']
+    df['Fat_Proportion'] = df['Fat(g/100g)'] / df['Total_Nutrients']
+    df['Dietary_Fiber_Proportion'] = df['Dietary Fiber(g/100g)'] / df['Total_Nutrients']
+
+    # Interactions
+    df['Carb_x_Protien'] = df['Carb(g/100g)'] * df['Protien(g/100g)']
+    df['Carb_x_Fat'] = df['Carb(g/100g)'] * df['Fat(g/100g)']
+    df['Carb_x_Dietary_Fiber'] = df['Carb(g/100g)'] * df['Dietary Fiber(g/100g)']
+    df['Protien_x_Fat'] = df['Protien(g/100g)'] * df['Fat(g/100g)']
+    df['Protien_x_Dietary_Fiber'] = df['Protien(g/100g)'] * df['Dietary Fiber(g/100g)']
+    df['Fat_x_Dietary_Fiber'] = df['Fat(g/100g)'] * df['Dietary Fiber(g/100g)']
+
+    # Polynomials
+    df['Carb_sq'] = df['Carb(g/100g)'] ** 2
+    df['Protien_sq'] = df['Protien(g/100g)'] ** 2
+    df['Fat_sq'] = df['Fat(g/100g)'] ** 2
+    df['Dietary_Fiber_sq'] = df['Dietary Fiber(g/100g)'] ** 2
+
+    # Interactions with WC/HC
+    nutrient_cols = ['Carb(g/100g)', 'Protien(g/100g)', 'Fat(g/100g)', 'Dietary Fiber(g/100g)']
+    for nutrient in nutrient_cols:
+        df[f'WC/HC_x_{nutrient}'] = df['WC/HC'] * df[nutrient]
+
+    return df
+
+def _load_lgb_model() -> lgb.Booster:
+    global _lgb_model, _feature_columns
+    if _lgb_model is not None:
+        return _lgb_model
+
+    # Model path preference: project root then NoteBooks
+    root = Path(__file__).parent.parent
+    candidates = [root / 'lightgbm_model.txt', root / 'NoteBooks' / 'lightgbm_model.txt']
+    model_path = None
+    for c in candidates:
+        if c.exists():
+            model_path = c
+            break
+    if model_path is None:
+        raise FileNotFoundError('lightgbm_model.txt not found in project root or NoteBooks/')
+
+    model = lgb.Booster(model_file=str(model_path))
+    _lgb_model = model
+
+    # If the model has feature_name stored, use it; otherwise will infer later
+    try:
+        _feature_columns = model.feature_name()
+    except Exception:
+        _feature_columns = None
+    return _lgb_model
+
+def _build_feature_frame(payload: PredictInput) -> pd.DataFrame:
+    # Map API fields to the training feature schema
+    # We don't have Height; BMI and WC/HC aren’t directly provided in the form.
+    # Approximate WC/HC using waist circumference and a default hip circ of 95 cm (assumption).
+    hip_circ = 95.0
+    wc = float(payload.waist_circumference or 0.0)
+    wth_ratio = (wc / hip_circ) if hip_circ else 0.0
+
+    df = pd.DataFrame([{
+        'Age': float(payload.age or 0.0),
+        'BMI(kg/m2)': np.nan,  # Not available in the form currently
+        'WC/HC': wth_ratio,
+        'Carb(g/100g)': float(payload.carb or 0.0),
+        'Protien(g/100g)': float(payload.protein or 0.0),
+        'Fat(g/100g)': float(payload.fat or 0.0),
+        'Dietary Fiber(g/100g)': float(payload.dietary_fiber or 0.0),
+        'Health Problem': 'None',
+        'Blood Group': payload.blood_group or 'Unknown'
+    }])
+
+    # Feature engineering similar to notebook
+    df_eng = _engineer_features(df)
+
+    # Drop columns that were dropped at train time if present
+    for drop_col in ['WC/HC', 'BMI(kg/m2)']:
+        if drop_col in df_eng.columns:
+            df_eng = df_eng.drop(columns=[drop_col])
+
+    # Align to model features if known; otherwise pass engineered features as-is
+    if _feature_columns:
+        for col in _feature_columns:
+            if col not in df_eng.columns:
+                df_eng[col] = 0.0
+        df_eng = df_eng[_feature_columns]
+
+    return df_eng
+
 @app.post("/api/predict")
 async def predict(payload: PredictInput):
-    """Simple prediction endpoint. Replace the implementation with your real model call."""
-    # Placeholder model: random result in realistic range
-    predicted_ppgi = random.uniform(40.0, 110.0)
+    """Predict PPGI as 100 * IAUC(food) / IAUC(glucose-ref).
 
-    return JSONResponse({
-        "ppgi": round(predicted_ppgi, 2),
-        "input_summary": payload.dict()
-    })
+    Glucose reference is defined as a 100g portion with 16.7g carbohydrate and 0 protein/fat/fiber.
+    """
+
+    def _frame_with_override_nutrients(base: PredictInput, carb: float, prot: float, fat: float, fiber: float) -> pd.DataFrame:
+        # Build a temporary PredictInput-like dict overriding only nutrients
+        temp = PredictInput(**{**base.dict(), 'carb': carb, 'protein': prot, 'fat': fat, 'dietary_fiber': fiber})
+        return _build_feature_frame(temp)
+
+    try:
+        model = _load_lgb_model()
+        # IAUC for the user-entered food
+        X_food = _build_feature_frame(payload)
+        iauc_food = float(model.predict(X_food)[0])
+
+        # IAUC for 100g glucose reference (16.7g carb, others 0)
+        X_glu = _frame_with_override_nutrients(payload, carb=16.7, prot=0.0, fat=0.0, fiber=0.0)
+        iauc_glu = float(model.predict(X_glu)[0])
+
+        # Guard against zero/negative reference
+        if iauc_glu <= 0:
+            raise ValueError(f"Invalid glucose reference IAUC: {iauc_glu}")
+
+        ppgi_val = 100.0 * iauc_food / iauc_glu
+        source = 'lightgbm'
+        return JSONResponse({
+            "ppgi": round(ppgi_val, 2),
+            "iauc_food": round(iauc_food, 4),
+            "iauc_glucose_ref": round(iauc_glu, 4),
+            "input_summary": payload.dict(),
+            "source": source
+        })
+    except Exception as e:
+        # Fallback to a realistic GI-like range and include error for visibility
+        predicted_ppgi = random.uniform(40.0, 110.0)
+        source = 'fallback_random'
+        return JSONResponse({
+            "ppgi": round(predicted_ppgi, 2),
+            "input_summary": payload.dict(),
+            "source": source,
+            "warning": f"Model prediction failed: {str(e)}"
+        })
 
 # Route for the main prediction page
 @app.get("/", response_class=FileResponse)

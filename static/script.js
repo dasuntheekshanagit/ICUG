@@ -65,26 +65,32 @@ async function predict() {
             throw new Error('Server did not return ppgi in response');
         }
 
-        // Determine alert type based on PPGI value
+        // Determine alert type based on GI value bands
+        // Low (0–55) = green, Medium (56–69) = orange, High (70+) = red
         let alertType = 'alert-success';
-        let interpretation = 'Low glycemic response - Good for blood sugar control';
+        let interpretation = 'Low GI (0–55) – slow rise in blood sugar';
 
-        if (ppgiValue > 70) {
+        if (ppgiValue >= 70) {
             alertType = 'alert-danger';
-            interpretation = 'High glycemic response - May cause rapid blood sugar spike';
-        } else if (ppgiValue > 55) {
+            interpretation = 'High GI (70+) – rapid rise in blood sugar';
+        } else if (ppgiValue >= 56) {
             alertType = 'alert-warning';
-            interpretation = 'Medium glycemic response - Moderate impact on blood sugar';
+            interpretation = 'Medium GI (56–69) – moderate rise in blood sugar';
         }
 
         resEl.classList.remove('alert-info');
         resEl.classList.add(alertType);
 
+        const iaucInfo = (data && (data.iauc_food != null) && (data.iauc_glucose_ref != null))
+            ? `<p class="mb-0 text-muted small">IAUC (food): ${data.iauc_food} | IAUC (glucose ref): ${data.iauc_glucose_ref}</p>`
+            : '';
+
         resContent.innerHTML = `
             <div>
                 <h5 class="alert-heading mb-2">Prediction Result</h5>
                 <p class="mb-2"><strong>Predicted PPGI:</strong> <span class="fs-4 fw-bold">${ppgiValue}</span></p>
-                <p class="mb-0"><em>${interpretation}</em></p>
+                <p class="mb-1"><em>${interpretation}</em></p>
+                ${iaucInfo}
             </div>
         `;
         // Ensure the result is visible to the user

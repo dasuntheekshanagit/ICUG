@@ -1,8 +1,17 @@
 /* Custom Styles for PPGI Predictor with Bootstrap */
 
 :root {
-    --primary-color: #0d6efd;
+    /* Brand palette */
+    --brand-primary: #64b0e2; /* light blue */
+    --brand-primary-dark: #2f7fb7; /* darker shade for hover */
+    --brand-accent: #ed6243; /* orange/red */
+    --brand-black: #000000;
+
+    /* Legacy custom tokens used in this stylesheet */
+    --primary-color: var(--brand-primary);
     --secondary-color: #6c757d;
+
+    /* Keep GI colors aligned with Bootstrap defaults for success/warning/danger */
     --success-color: #198754;
     --info-color: #0dcaf0;
     --warning-color: #ffc107;
@@ -21,6 +30,7 @@ body {
     background-repeat: no-repeat;
     min-height: 100vh;
     position: relative;
+    color: var(--brand-black);
 }
 
 body::before {
@@ -38,6 +48,24 @@ body::before {
 .navbar {
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+}
+
+/* Custom navbar with brand colors */
+.navbar-custom {
+    background: linear-gradient(90deg, var(--brand-primary) 0%, var(--brand-accent) 100%);
+}
+.navbar-custom .navbar-brand,
+.navbar-custom .nav-link {
+    color: rgba(255, 255, 255, 0.95) !important;
+}
+.navbar-custom .nav-link.active,
+.navbar-custom .nav-link:hover {
+    color: #ffffff !important;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+.navbar-dark .navbar-toggler-icon {
+    filter: invert(1) brightness(1.2);
 }
 
 .navbar-brand {
@@ -65,10 +93,19 @@ body::before {
     color: var(--primary-color) !important;
 }
 
+/* Brand primary utilities overriding Bootstrap's primary to match logo */
+.text-primary { color: var(--brand-primary) !important; }
+.bg-primary { background-color: var(--brand-primary) !important; }
+.border-primary { border-color: var(--brand-primary) !important; }
+
+/* Accent utility (optional helper) */
+.bg-accent { background-color: var(--brand-accent) !important; }
+.text-accent { color: var(--brand-accent) !important; }
+
 /* Hero Section */
 .hero-section {
     padding: 120px 0 60px 0;
-    background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(25, 135, 84, 0.1) 100%);
+    background: linear-gradient(135deg, rgba(100, 176, 226, 0.12) 0%, rgba(237, 98, 67, 0.10) 100%);
     margin-top: 56px;
 }
 
@@ -111,7 +148,7 @@ body::before {
 
 .form-control:focus, .form-select:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    box-shadow: 0 0 0 0.25rem rgba(100, 176, 226, 0.35);
     transform: translateY(-2px);
 }
 
@@ -122,7 +159,7 @@ body::before {
 
 /* Button Styling */
 .btn-primary {
-    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
     border: none;
     border-radius: 12px;
     font-weight: 600;
@@ -130,9 +167,9 @@ body::before {
 }
 
 .btn-primary:hover {
-    background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+    background: linear-gradient(135deg, var(--brand-primary-dark) 0%, #245f8b 100%);
     transform: translateY(-3px);
-    box-shadow: 0 8px 20px rgba(13, 110, 253, 0.3);
+    box-shadow: 0 8px 20px rgba(100, 176, 226, 0.35);
 }
 
 .btn-primary:active {
@@ -162,6 +199,18 @@ footer {
     background: rgba(248, 249, 250, 0.95);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+}
+
+.footer-custom {
+    background: linear-gradient(180deg, #000000 0%, #0b1b2e 100%);
+    color: #e9f7ff;
+}
+.footer-custom a,
+.footer-custom p {
+    color: #e9f7ff !important;
+}
+.footer-custom .text-muted {
+    color: rgba(233, 247, 255, 0.85) !important;
 }
 
 /* Icons */
@@ -213,10 +262,10 @@ html {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-primary-dark) 100%);
     border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #0a58ca 0%, #084298 100%);
+    background: linear-gradient(135deg, var(--brand-primary-dark) 0%, #245f8b 100%);
 }
