@@ -1,11 +1,14 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 import random
 from pathlib import Path
 import os
 from typing import Optional
+import io
+import csv
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -33,6 +36,7 @@ class PredictInput(BaseModel):
 
 _lgb_model: Optional[lgb.Booster] = None
 _feature_columns: Optional[list] = None
+_last_result: Optional[dict] = None
 
 def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
@@ -136,6 +140,7 @@ async def predict(payload: PredictInput):
 
     Glucose reference is defined as a 100g portion with 16.7g carbohydrate and 0 protein/fat/fiber.
     """
+    global _last_result
 
     def _frame_with_override_nutrients(base: PredictInput, carb: float, prot: float, fat: float, fiber: float) -> pd.DataFrame:
         # Build a temporary PredictInput-like dict overriding only nutrients
@@ -158,28 +163,41 @@ async def predict(payload: PredictInput):
 
         ppgi_val = 100.0 * iauc_food / iauc_glu
         source = 'lightgbm'
-        return JSONResponse({
+        result = {
             "ppgi": round(ppgi_val, 2),
             "iauc_food": round(iauc_food, 4),
             "iauc_glucose_ref": round(iauc_glu, 4),
             "input_summary": payload.dict(),
-            "source": source
-        })
+            "source": source,
+            "timestamp": datetime.utcnow().isoformat() + 'Z'
+        }
+        # Cache last result in-memory
+        _last_result = result
+        return JSONResponse(result)
     except Exception as e:
         # Fallback to a realistic GI-like range and include error for visibility
         predicted_ppgi = random.uniform(40.0, 110.0)
         source = 'fallback_random'
-        return JSONResponse({
+        result = {
             "ppgi": round(predicted_ppgi, 2),
             "input_summary": payload.dict(),
             "source": source,
-            "warning": f"Model prediction failed: {str(e)}"
-        })
+            "warning": f"Model prediction failed: {str(e)}",
+            "timestamp": datetime.utcnow().isoformat() + 'Z'
+        }
+        _last_result = result
+        return JSONResponse(result)
 
 # Route for the main prediction page
 @app.get("/", response_class=FileResponse)
 async def index():
     """Return the static index page (Prediction Form)."""
+    fp = Path(__file__).parent.parent / "static" / "index.html"
+    return FileResponse(fp)
+
+# Alias to calculator
+@app.get("/calculate", response_class=FileResponse)
+async def calculate():
     fp = Path(__file__).parent.parent / "static" / "index.html"
     return FileResponse(fp)
 
@@ -196,3 +214,58 @@ async def docs():
     """Return the static documentation page."""
     fp = Path(__file__).parent.parent / "static" / "docs.html"
     return FileResponse(fp)
+
+# Introduction page
+@app.get("/introduction", response_class=FileResponse)
+async def introduction():
+    fp = Path(__file__).parent.parent / "static" / "introduction.html"
+    return FileResponse(fp)
+
+# How-to page
+@app.get("/how-to", response_class=FileResponse)
+async def how_to():
+    fp = Path(__file__).parent.parent / "static" / "howto.html"
+    return FileResponse(fp)
+
+# Saved results page
+@app.get("/saved", response_class=FileResponse)
+async def saved():
+    fp = Path(__file__).parent.parent / "static" / "saved.html"
+    return FileResponse(fp)
+
+# Last result as JSON
+@app.get("/api/last_result")
+async def last_result():
+    if _last_result is None:
+        return JSONResponse({"exists": False})
+    return JSONResponse({"exists": True, "result": _last_result})
+
+# Last result as CSV download
+@app.get("/api/last_result.csv")
+async def last_result_csv():
+    if _last_result is None:
+        return JSONResponse({"detail": "No result available"}, status_code=404)
+
+    # Flatten payload for CSV
+    r = _last_result.copy()
+    payload = r.pop("input_summary", {})
+    flat = {**payload, **r}
+
+    # Consistent column order
+    cols = [
+        'gender','age','weight','waist_circumference','birth_place','blood_group',
+        'family_history','physical_activity','food_item','carb','protein','fat','dietary_fiber',
+        'ppgi','iauc_food','iauc_glucose_ref','source','timestamp'
+    ]
+    for k in list(flat.keys()):
+        if k not in cols:
+            cols.append(k)
+
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=cols)
+    writer.writeheader()
+    writer.writerow({c: flat.get(c, '') for c in cols})
+    buf.seek(0)
+    filename = f"ppgi_result_{datetime.utcnow().strftime('%Y%m%dT%H%M%SZ')}.csv"
+    headers = {"Content-Disposition": f"attachment; filename={filename}"}
+    return StreamingResponse(buf, media_type='text/csv', headers=headers)

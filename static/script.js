@@ -93,6 +93,9 @@ async function predict() {
                 ${iaucInfo}
             </div>
         `;
+        // Reveal download button now that we have a saved last result
+        const dl = document.getElementById('download-csv');
+        if (dl) dl.classList.remove('d-none');
         // Ensure the result is visible to the user
         try { resEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (_) { }
     } catch (err) {

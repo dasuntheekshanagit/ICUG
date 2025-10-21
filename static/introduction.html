@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Introduction - GlycoMe</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="/static/style.css" />
+    </head>
+    <body>
+        <nav
+            class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm fixed-top"
+        >
+            <div class="container">
+                <a
+                    class="navbar-brand fw-bold d-flex align-items-center gap-2"
+                    href="/"
+                >
+                    <img
+                        src="/static/logo.jpeg"
+                        alt="Logo"
+                        style="
+                            height: 28px;
+                            width: auto;
+                            border-radius: 4px;
+                            object-fit: contain;
+                        "
+                    />
+                    <span>GlycoMe</span>
+                </a>
+                <button
+                    class="navbar-toggler"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#navbarNav"
+                >
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/introduction"
+                                >Introduction</a
+                            >
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/how-to">How to use</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/calculate"
+                                >Calculate personalized PPGI</a
+                            >
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/saved">Saved results</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/about">About us</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="hero-section">
+            <div class="container text-center">
+                <h1 class="display-5 fw-bold mb-2">Welcome to GlycoMe</h1>
+                <p class="lead text-muted">
+                    Understand and personalize your postprandial glycemic
+                    response
+                </p>
+            </div>
+        </div>
+
+        <div class="container my-5">
+            <div class="row">
+                <div class="col-lg-10 mx-auto">
+                    <div class="card border-0 shadow-sm p-4">
+                        <h3 class="fw-bold text-primary">What is PPGI?</h3>
+                        <p>
+                            PPGI is a personalized estimate of your glycemic
+                            response to a given food, computed as 100 ×
+                            IAUC(food) ÷ IAUC(glucose reference). The glucose
+                            reference is a 100 g portion with 16.7 g
+                            carbohydrate and 0 g protein/fat/fiber.
+                        </p>
+                        <h4 class="fw-semibold mt-4">How GlycoMe works</h4>
+                        <ol>
+                            <li>
+                                Collects your basic info (age, waist, activity,
+                                blood group)
+                            </li>
+                            <li>Uses food nutrient composition</li>
+                            <li>Predicts IAUC with a trained LightGBM model</li>
+                            <li>
+                                Converts IAUC to PPGI by normalizing to glucose
+                                reference
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer-custom py-4 mt-5">
+            <div class="container text-center">
+                <p class="mb-0">
+                    <i class="bi bi-c-circle"></i> 2025 GlycoMe. Developed by
+                    the Department of Food Science and Technology, University of
+                    Peradeniya.
+                </p>
+            </div>
+        </footer>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
+</html>

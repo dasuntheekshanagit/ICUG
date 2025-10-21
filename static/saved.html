@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Saved results - GlycoMe</title>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="/static/style.css" />
+    </head>
+    <body>
+        <nav
+            class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm fixed-top"
+        >
+            <div class="container">
+                <a
+                    class="navbar-brand fw-bold d-flex align-items-center gap-2"
+                    href="/"
+                >
+                    <img
+                        src="/static/logo.jpeg"
+                        alt="Logo"
+                        style="
+                            height: 28px;
+                            width: auto;
+                            border-radius: 4px;
+                            object-fit: contain;
+                        "
+                    />
+                    <span>GlycoMe</span>
+                </a>
+                <button
+                    class="navbar-toggler"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#navbarNav"
+                >
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/introduction"
+                                >Introduction</a
+                            >
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/how-to">How to use</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/calculate"
+                                >Calculate personalized PPGI</a
+                            >
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active fw-semibold" href="/saved"
+                                >Saved results</a
+                            >
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/about">About us</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="hero-section">
+            <div class="container text-center">
+                <h1 class="display-5 fw-bold mb-2">Saved results</h1>
+                <p class="lead text-muted">Your most recent prediction</p>
+            </div>
+        </div>
+
+        <div class="container my-5" id="saved-root">
+            <div class="row">
+                <div class="col-lg-10 mx-auto">
+                    <div class="card border-0 shadow-sm p-4" id="saved-card">
+                        <div id="saved-empty" class="text-center d-none">
+                            <p class="text-muted mb-3">
+                                No saved result yet. Predict first on the
+                                calculator page.
+                            </p>
+                            <a href="/calculate" class="btn btn-primary"
+                                >Go to calculator</a
+                            >
+                        </div>
+                        <div id="saved-content" class="d-none">
+                            <h4 class="fw-bold mb-3">Latest Result</h4>
+                            <div id="saved-fields" class="mb-3"></div>
+                            <a
+                                href="/api/last_result.csv"
+                                class="btn btn-primary"
+                                >Download CSV</a
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer-custom py-4 mt-5">
+            <div class="container text-center">
+                <p class="mb-0">
+                    <i class="bi bi-c-circle"></i> 2025 GlycoMe. Developed by
+                    the Department of Food Science and Technology, University of
+                    Peradeniya.
+                </p>
+            </div>
+        </footer>
+
+        <script>
+            async function loadSaved() {
+                try {
+                    const resp = await fetch("/api/last_result");
+                    const data = await resp.json();
+                    const empty = document.getElementById("saved-empty");
+                    const content = document.getElementById("saved-content");
+                    const fields = document.getElementById("saved-fields");
+                    if (!data.exists) {
+                        empty.classList.remove("d-none");
+                        content.classList.add("d-none");
+                        return;
+                    }
+                    const r = data.result || {};
+                    content.classList.remove("d-none");
+                    empty.classList.add("d-none");
+                    const rows = [];
+                    rows.push(`<div><strong>PPGI:</strong> ${r.ppgi}</div>`);
+                    if (r.iauc_food != null && r.iauc_glucose_ref != null) {
+                        rows.push(
+                            `<div><strong>IAUC (food):</strong> ${r.iauc_food} &nbsp; <strong>IAUC (glucose ref):</strong> ${r.iauc_glucose_ref}</div>`
+                        );
+                    }
+                    if (r.timestamp)
+                        rows.push(
+                            `<div class="text-muted small">${r.timestamp}</div>`
+                        );
+                    // Show subset of inputs
+                    const inp = r.input_summary || {};
+                    rows.push(
+                        `<div class="mt-2">` +
+                            `<span class="me-3"><strong>Age:</strong> ${
+                                inp.age ?? ""
+                            }</span>` +
+                            `<span class="me-3"><strong>WC:</strong> ${
+                                inp.waist_circumference ?? ""
+                            }</span>` +
+                            `<span class="me-3"><strong>Carb:</strong> ${
+                                inp.carb ?? ""
+                            }</span>` +
+                            `<span class="me-3"><strong>Protein:</strong> ${
+                                inp.protein ?? ""
+                            }</span>` +
+                            `<span class="me-3"><strong>Fat:</strong> ${
+                                inp.fat ?? ""
+                            }</span>` +
+                            `<span class="me-3"><strong>Fiber:</strong> ${
+                                inp.dietary_fiber ?? ""
+                            }</span>` +
+                            `</div>`
+                    );
+                    fields.innerHTML = rows.join("");
+                } catch (e) {
+                    document.getElementById(
+                        "saved-card"
+                    ).innerHTML = `<div class="text-danger">Failed to load saved result: ${e}</div>`;
+                }
+            }
+            document.addEventListener("DOMContentLoaded", loadSaved);
+        </script>
+
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    </body>
+</html>
