@@ -79,27 +79,117 @@
             <div class="row">
                 <div class="col-lg-10 mx-auto">
                     <div class="card border-0 shadow-sm p-4">
-                        <h3 class="fw-bold text-primary">What is PPGI?</h3>
+                        <h3 class="fw-bold text-primary">
+                            Glycemic Index (GI)
+                        </h3>
                         <p>
-                            PPGI is a personalized estimate of your glycemic
-                            response to a given food, computed as 100 ×
-                            IAUC(food) ÷ IAUC(glucose reference). The glucose
-                            reference is a 100 g portion with 16.7 g
-                            carbohydrate and 0 g protein/fat/fiber.
+                            <strong>What is Glycemic Index (GI)?</strong>
                         </p>
-                        <h4 class="fw-semibold mt-4">How GlycoMe works</h4>
+                        <ul>
+                            <li>
+                                GI measures how quickly a food raises blood
+                                sugar after eating.
+                            </li>
+                            <li>
+                                Foods are scored from 0 to 100, with pure
+                                glucose set at 100 as the reference.
+                            </li>
+                            <li>
+                                Categories:
+                                <ul>
+                                    <li>
+                                        Low GI (0–55) – slow rise in blood sugar
+                                    </li>
+                                    <li>
+                                        Medium GI (56–69) – moderate rise in
+                                        blood sugar
+                                    </li>
+                                    <li>
+                                        High GI (70+) – rapid rise in blood
+                                        sugar
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+
+                        <h4 class="fw-semibold mt-4">
+                            How GI affects your body
+                        </h4>
+                        <p>
+                            When you eat carbohydrates, your body converts them
+                            into glucose which enters the bloodstream.
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>High-GI foods:</strong> Rapid absorption
+                                → fast blood sugar spikes.
+                            </li>
+                            <li>
+                                <strong>Low-GI foods:</strong> Slow absorption →
+                                steadier glucose release and more stable energy.
+                            </li>
+                        </ul>
+
+                        <h3 class="fw-bold text-primary mt-4">
+                            Personalized Post-Prandial Glycemic Index (PPGI)
+                        </h3>
+                        <p>
+                            <strong>What is Personalized PPGI?</strong>
+                        </p>
+                        <p>
+                            Personalized PPGI predicts how your body
+                            specifically responds to a food. Unlike standard GI
+                            (which is the same for everyone), PPGI incorporates
+                            your personal characteristics so the prediction
+                            reflects your individual physiology.
+                        </p>
+                        <p>
+                            Factors considered may include age, gender, weight,
+                            waist circumference, birthplace and other metadata
+                            collected in the form. PPGI therefore provides a
+                            more individualized estimate of a food’s glycemic
+                            impact.
+                        </p>
+
+                        <h4 class="fw-semibold mt-3">How GlycoMe works</h4>
                         <ol>
                             <li>
-                                Collects your basic info (age, waist, activity,
-                                blood group)
+                                Collects user information (age, waist, activity,
+                                blood group, etc.).
                             </li>
-                            <li>Uses food nutrient composition</li>
-                            <li>Predicts IAUC with a trained LightGBM model</li>
                             <li>
-                                Converts IAUC to PPGI by normalizing to glucose
-                                reference
+                                Uses the food's nutrient composition (per 100 g)
+                                as input.
+                            </li>
+                            <li>
+                                Predicts IAUC for the food and for a glucose
+                                reference using a trained model.
+                            </li>
+                            <li>
+                                Computes PPGI by normalizing IAUC(food) to the
+                                glucose reference.
                             </li>
                         </ol>
+
+                        <h4 class="fw-semibold mt-3">
+                            Glycemic Load (GL) — practical context
+                        </h4>
+                        <p>
+                            In addition to GI, GlycoMe computes
+                            <strong>Glycemic Load (GL)</strong>, which accounts
+                            for the amount of carbohydrate in a serving. GL is
+                            calculated as:
+                        </p>
+                        <p class="fst-italic">
+                            GL = (GI × Carbs per serving) / 100
+                        </p>
+
+                        <h4 class="fw-semibold mt-3">Tips</h4>
+                        <p>
+                            Want to stay healthy? Choose low-GI foods — they
+                            help provide steadier energy, better blood sugar
+                            control, and may reduce diabetes risk.
+                        </p>
                     </div>
                 </div>
             </div>

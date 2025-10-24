@@ -82,20 +82,94 @@
             <div class="row">
                 <div class="col-lg-10 mx-auto">
                     <div class="card border-0 shadow-sm p-4">
-                        <ol class="mb-0">
+                        <h4 class="fw-bold">
+                            Step 1 – Enter Your General Information
+                        </h4>
+                        <p>
+                            Provide your basic personal details so the app can
+                            personalize the prediction for you. You’ll be asked
+                            to enter:
+                        </p>
+                        <ul>
+                            <li>Age</li>
+                            <li>Gender</li>
+                            <li>Weight (in kg)</li>
+                            <li>Waist circumference (in cm)*</li>
                             <li>
-                                Enter your personal info (Age, Waist
-                                Circumference, Activity, Blood Group)
+                                Birthplace (where you’ve lived for at least 10
+                                years)
+                            </li>
+                            <li>Blood group</li>
+                            <li>Level of physical activity</li>
+                            <li>Family history of diabetes</li>
+                        </ul>
+
+                        <h5 class="mt-3">Measuring Waist Circumference</h5>
+                        <ol>
+                            <li>Stand upright and relax your abdomen.</li>
+                            <li>
+                                Place a measuring tape around your waist at the
+                                midpoint between the bottom of your ribs and the
+                                top of your hip bones.
+                            </li>
+                            <li>Record the measurement in centimeters (cm).</li>
+                        </ol>
+
+                        <h4 class="fw-bold mt-4">
+                            Step 2 – Add Food Information
+                        </h4>
+                        <ul>
+                            <li>
+                                Enter your serving size (portion in grams),
+                                carbohydrates, protein, fat, and dietary fiber.
                             </li>
                             <li>
-                                Select a food or enter nutrient values
-                                (Carb/Protein/Fat/Fiber)
+                                The app includes pre-saved nutrient data for
+                                common foods — selecting a food will auto-fill
+                                the nutrition fields.
                             </li>
                             <li>
-                                Click “Predict PPGI” to see your GI
-                                classification and download the CSV
+                                If the food is not listed, use the manual entry
+                                option to type the food name and nutrition
+                                values.
+                            </li>
+                            <li>
+                                For processed foods, use the nutrition label
+                                values and the serving size on the label.
+                            </li>
+                        </ul>
+
+                        <h4 class="fw-bold mt-4">Step 3 – Predict and Save</h4>
+                        <ol>
+                            <li>
+                                Click the <strong>Predict PPGI</strong> button
+                                to compute your personalized GI (PPGI) and
+                                Glycemic Load (GL).
+                            </li>
+                            <li>
+                                View your results on the page — both GI and GL
+                                will be shown along with IAUC values when
+                                available.
+                            </li>
+                            <li>
+                                Download your result as a CSV file (click
+                                <em>Download CSV</em>) to save or share.
                             </li>
                         </ol>
+
+                        <p class="mt-3">
+                            <em>Note:</em> The portion size you enter is used to
+                            compute Glycemic Load (GL). The model itself uses
+                            nutrient values per 100 g for predicting IAUC and
+                            PPGI.
+                        </p>
+                        <p class="mt-2">
+                            <small
+                                >*Accurate waist measurement improves
+                                personalization; follow the guide above for
+                                consistency.</small
+                            >
+                        </p>
                     </div>
                 </div>
             </div>

@@ -12,6 +12,7 @@ async function predict() {
         family_history: document.getElementById('family_history').value,
         physical_activity: document.getElementById('physical_activity').value,
         food_item: (manualFoodName && manualFoodName.trim()) ? manualFoodName.trim() : (selectedFood || ''),
+        portion_g: parseFloat(document.getElementById('portion').value || 100),
         carb: parseFloat(document.getElementById('carb').value || 0),
         protein: parseFloat(document.getElementById('protein').value || 0),
         fat: parseFloat(document.getElementById('fat').value || 0),
@@ -61,6 +62,7 @@ async function predict() {
         }
 
         const ppgiValue = data && (data.ppgi ?? data.ppgi_value ?? null);
+        const glValue = data && (data.gl ?? null);
         if (ppgiValue === null || ppgiValue === undefined) {
             throw new Error('Server did not return ppgi in response');
         }
@@ -88,7 +90,8 @@ async function predict() {
         resContent.innerHTML = `
             <div>
                 <h5 class="alert-heading mb-2">Prediction Result</h5>
-                <p class="mb-2"><strong>Predicted PPGI:</strong> <span class="fs-4 fw-bold">${ppgiValue}</span></p>
+                <p class="mb-1"><strong>Predicted GI:</strong> <span class="fs-5 fw-bold">${ppgiValue}</span></p>
+                ${glValue !== null && glValue !== undefined ? `<p class="mb-2"><strong>Glycemic Load (GL):</strong> <span class="fs-5 fw-bold">${glValue}</span></p>` : ''}
                 <p class="mb-1"><em>${interpretation}</em></p>
                 ${iaucInfo}
             </div>

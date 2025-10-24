@@ -32,6 +32,8 @@ class PredictInput(BaseModel):
     protein: float = 0.0
     fat: float = 0.0
     dietary_fiber: float = 0.0
+    # Portion of the food (grams) consumed in this serving
+    portion_g: float = 100.0
 
 _lgb_model: Optional[object] = None
 _feature_columns: Optional[list] = None
@@ -154,52 +156,79 @@ def _build_feature_frame(payload: PredictInput) -> pd.DataFrame:
 
 @app.post("/api/predict")
 async def predict(payload: PredictInput):
-    """Predict PPGI as 100 * IAUC(food) / IAUC(glucose-ref).
+    """Predict GI (PPGI) as 100 * IAUC(food) / IAUC(glucose-ref).
 
-    Glucose reference is defined as a 100g portion with 16.7g carbohydrate and 0 protein/fat/fiber.
+    Notes:
+    - Model inputs are always treated as per-100g nutritional values (labels: g/100g).
+    - User can specify a portion size (grams). Portion is NOT fed to the model,
+      but is used to compute Glycemic Load (GL) based on GI and carbs-per-serving.
+    - Glucose reference is defined as a 100g portion with 100g carbohydrate and
+      0 protein/fat/fiber.
     """
+
     global _last_result
 
     def _frame_with_override_nutrients(base: PredictInput, carb: float, prot: float, fat: float, fiber: float) -> pd.DataFrame:
-        # Build a temporary PredictInput-like dict overriding only nutrients
-        temp = PredictInput(**{**base.dict(), 'carb': carb, 'protein': prot, 'fat': fat, 'dietary_fiber': fiber})
+        """Helper to override only nutrient fields while keeping user metadata constant."""
+        temp_dict = base.dict()
+        temp_dict.update({
+            'carb': carb,
+            'protein': prot,
+            'fat': fat,
+            'dietary_fiber': fiber,
+        })
+        temp = PredictInput(**temp_dict)
         return _build_feature_frame(temp)
 
     try:
         model = _load_lgb_model()
-        # IAUC for the user-entered food
+
+        # IAUC for the user-entered food (model expects per-100g nutrients)
         X_food = _build_feature_frame(payload)
         iauc_food = float(model.predict(X_food)[0])
 
-        # IAUC for 100g glucose reference (16.7g carb, others 0)
-        X_glu = _frame_with_override_nutrients(payload, carb=16.7, prot=0.0, fat=0.0, fiber=0.0)
+        # IAUC for 100g glucose reference (100g carb, others 0)
+        X_glu = _frame_with_override_nutrients(payload, carb=100.0, prot=0.0, fat=0.0, fiber=0.0)
         iauc_glu = float(model.predict(X_glu)[0])
 
         # Guard against zero/negative reference
         if iauc_glu <= 0:
             raise ValueError(f"Invalid glucose reference IAUC: {iauc_glu}")
 
+        # GI calculation
         ppgi_val = 100.0 * iauc_food / iauc_glu
-        source = 'lightgbm'
+
+        # Carbohydrates per serving (g) from per-100g carb and user-specified portion size
+        carbs_per_serving = float(payload.carb or 0.0) * float(payload.portion_g or 0.0) / 100.0
+        gl_val = (ppgi_val * carbs_per_serving) / 100.0
+
         result = {
             "ppgi": round(ppgi_val, 2),
+            "gl": round(gl_val, 2),
+            "carbs_per_serving": round(carbs_per_serving, 2),
             "iauc_food": round(iauc_food, 4),
             "iauc_glucose_ref": round(iauc_glu, 4),
             "input_summary": payload.dict(),
-            "source": source,
+            "source": 'lightgbm',
             "timestamp": datetime.utcnow().isoformat() + 'Z'
         }
+
         # Cache last result in-memory
         _last_result = result
         return JSONResponse(result)
+
     except Exception as e:
         # Fallback to a realistic GI-like range and include error for visibility
         predicted_ppgi = random.uniform(40.0, 110.0)
-        source = 'fallback_random'
+        carbs_per_serving = float(payload.carb or 0.0) * float(payload.portion_g or 0.0) / 100.0
+        predicted_gl = (predicted_ppgi * carbs_per_serving) / 100.0
+
         result = {
             "ppgi": round(predicted_ppgi, 2),
+            "gl": round(predicted_gl, 2),
+            "carbs_per_serving": round(carbs_per_serving, 2),
             "input_summary": payload.dict(),
-            "source": source,
+            "source": 'fallback_random',
             "warning": f"Model prediction failed: {str(e)}",
             "timestamp": datetime.utcnow().isoformat() + 'Z'
         }
@@ -272,8 +301,8 @@ async def last_result_csv():
     # Consistent column order
     cols = [
         'gender','age','weight','waist_circumference','birth_place','blood_group',
-        'family_history','physical_activity','food_item','carb','protein','fat','dietary_fiber',
-        'ppgi','iauc_food','iauc_glucose_ref','source','timestamp'
+        'family_history','physical_activity','food_item','carb','protein','fat','dietary_fiber','portion_g',
+        'carbs_per_serving','ppgi','gl','iauc_food','iauc_glucose_ref','source','timestamp'
     ]
     for k in list(flat.keys()):
         if k not in cols:
