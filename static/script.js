@@ -13,6 +13,7 @@ async function predict() {
         physical_activity: document.getElementById('physical_activity').value,
         food_item: (manualFoodName && manualFoodName.trim()) ? manualFoodName.trim() : (selectedFood || ''),
         portion_g: parseFloat(document.getElementById('portion').value || 100),
+        nutrients_per_serving: Boolean(document.getElementById('nutrients_per_serving') && document.getElementById('nutrients_per_serving').checked),
         carb: parseFloat(document.getElementById('carb').value || 0),
         protein: parseFloat(document.getElementById('protein').value || 0),
         fat: parseFloat(document.getElementById('fat').value || 0),

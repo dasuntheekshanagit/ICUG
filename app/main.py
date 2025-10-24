@@ -34,6 +34,10 @@ class PredictInput(BaseModel):
     dietary_fiber: float = 0.0
     # Portion of the food (grams) consumed in this serving
     portion_g: float = 100.0
+    # If true, the nutrient numbers provided (carb/protein/fat/fiber)
+    # are for the serving (the value is per-serving). When set, server
+    # will convert them to per-100g before passing to the model.
+    nutrients_per_serving: bool = False
 
 _lgb_model: Optional[object] = None
 _feature_columns: Optional[list] = None
@@ -183,8 +187,23 @@ async def predict(payload: PredictInput):
     try:
         model = _load_lgb_model()
 
-        # IAUC for the user-entered food (model expects per-100g nutrients)
-        X_food = _build_feature_frame(payload)
+        # Determine how to interpret the user-provided nutrient fields.
+        # If nutrients_per_serving=True, payload.carb/protein/fat/fiber are per-serving
+        # and must be converted to per-100g before feeding the model.
+        if getattr(payload, 'nutrients_per_serving', False) and float(payload.portion_g or 0.0) > 0:
+            # Convert per-serving -> per-100g
+            portion = float(payload.portion_g)
+            carb_per_100g = float(payload.carb) * 100.0 / portion
+            protein_per_100g = float(payload.protein) * 100.0 / portion
+            fat_per_100g = float(payload.fat) * 100.0 / portion
+            fiber_per_100g = float(payload.dietary_fiber) * 100.0 / portion
+
+            # Build a temporary PredictInput with converted per-100g nutrients
+            temp = PredictInput(**{**payload.dict(), 'carb': carb_per_100g, 'protein': protein_per_100g, 'fat': fat_per_100g, 'dietary_fiber': fiber_per_100g})
+            X_food = _build_feature_frame(temp)
+        else:
+            # Payload nutrients are already per-100g
+            X_food = _build_feature_frame(payload)
         iauc_food = float(model.predict(X_food)[0])
 
         # IAUC for 100g glucose reference (100g carb, others 0)
@@ -198,14 +217,30 @@ async def predict(payload: PredictInput):
         # GI calculation
         ppgi_val = 100.0 * iauc_food / iauc_glu
 
-        # Carbohydrates per serving (g) from per-100g carb and user-specified portion size
-        carbs_per_serving = float(payload.carb or 0.0) * float(payload.portion_g or 0.0) / 100.0
+        # Compute carbs per serving. If the user provided nutrients per-serving,
+        # payload.carb already represents carbs_per_serving; otherwise derive from per-100g
+        if getattr(payload, 'nutrients_per_serving', False):
+            carbs_per_serving = float(payload.carb or 0.0)
+            carb_per_100g_value = round((float(payload.carb or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.carb or 0.0), 2)
+            protein_per_100g_value = round((float(payload.protein or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.protein or 0.0), 2)
+            fat_per_100g_value = round((float(payload.fat or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.fat or 0.0), 2)
+            fiber_per_100g_value = round((float(payload.dietary_fiber or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.dietary_fiber or 0.0), 2)
+        else:
+            carbs_per_serving = float(payload.carb or 0.0) * float(payload.portion_g or 0.0) / 100.0
+            carb_per_100g_value = round(float(payload.carb or 0.0), 2)
+            protein_per_100g_value = round(float(payload.protein or 0.0), 2)
+            fat_per_100g_value = round(float(payload.fat or 0.0), 2)
+            fiber_per_100g_value = round(float(payload.dietary_fiber or 0.0), 2)
         gl_val = (ppgi_val * carbs_per_serving) / 100.0
 
         result = {
             "ppgi": round(ppgi_val, 2),
             "gl": round(gl_val, 2),
             "carbs_per_serving": round(carbs_per_serving, 2),
+            "carb_per_100g": carb_per_100g_value,
+            "protein_per_100g": protein_per_100g_value,
+            "fat_per_100g": fat_per_100g_value,
+            "dietary_fiber_per_100g": fiber_per_100g_value,
             "iauc_food": round(iauc_food, 4),
             "iauc_glucose_ref": round(iauc_glu, 4),
             "input_summary": payload.dict(),
@@ -220,13 +255,30 @@ async def predict(payload: PredictInput):
     except Exception as e:
         # Fallback to a realistic GI-like range and include error for visibility
         predicted_ppgi = random.uniform(40.0, 110.0)
-        carbs_per_serving = float(payload.carb or 0.0) * float(payload.portion_g or 0.0) / 100.0
+
+        if getattr(payload, 'nutrients_per_serving', False):
+            carbs_per_serving = float(payload.carb or 0.0)
+            carb_per_100g_value = round((float(payload.carb or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.carb or 0.0), 2)
+            protein_per_100g_value = round((float(payload.protein or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.protein or 0.0), 2)
+            fat_per_100g_value = round((float(payload.fat or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.fat or 0.0), 2)
+            fiber_per_100g_value = round((float(payload.dietary_fiber or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.dietary_fiber or 0.0), 2)
+        else:
+            carbs_per_serving = float(payload.carb or 0.0) * float(payload.portion_g or 0.0) / 100.0
+            carb_per_100g_value = round(float(payload.carb or 0.0), 2)
+            protein_per_100g_value = round(float(payload.protein or 0.0), 2)
+            fat_per_100g_value = round(float(payload.fat or 0.0), 2)
+            fiber_per_100g_value = round(float(payload.dietary_fiber or 0.0), 2)
+
         predicted_gl = (predicted_ppgi * carbs_per_serving) / 100.0
 
         result = {
             "ppgi": round(predicted_ppgi, 2),
             "gl": round(predicted_gl, 2),
             "carbs_per_serving": round(carbs_per_serving, 2),
+            "carb_per_100g": carb_per_100g_value,
+            "protein_per_100g": protein_per_100g_value,
+            "fat_per_100g": fat_per_100g_value,
+            "dietary_fiber_per_100g": fiber_per_100g_value,
             "input_summary": payload.dict(),
             "source": 'fallback_random',
             "warning": f"Model prediction failed: {str(e)}",
@@ -302,6 +354,7 @@ async def last_result_csv():
     cols = [
         'gender','age','weight','waist_circumference','birth_place','blood_group',
         'family_history','physical_activity','food_item','carb','protein','fat','dietary_fiber','portion_g',
+        'carb_per_100g','protein_per_100g','fat_per_100g','dietary_fiber_per_100g',
         'carbs_per_serving','ppgi','gl','iauc_food','iauc_glucose_ref','source','timestamp'
     ]
     for k in list(flat.keys()):
