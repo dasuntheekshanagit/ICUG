@@ -68,34 +68,77 @@ async function predict() {
             throw new Error('Server did not return ppgi in response');
         }
 
-        // Determine alert type based on GI value bands
-        // Low (0–55) = green, Medium (56–69) = orange, High (70+) = red
+        // Determine alert type and badges based on GI value bands
+        // Low (0–55) = green, Medium (56–69) = yellow, High (70+) = red
         let alertType = 'alert-success';
         let interpretation = 'Low GI (0–55) – slow rise in blood sugar';
-
+        let giBadge = 'bg-success';
+        let giBandText = 'Low';
         if (ppgiValue >= 70) {
             alertType = 'alert-danger';
+            giBadge = 'bg-danger';
+            giBandText = 'High';
             interpretation = 'High GI (70+) – rapid rise in blood sugar';
         } else if (ppgiValue >= 56) {
             alertType = 'alert-warning';
+            giBadge = 'bg-warning text-dark';
+            giBandText = 'Medium';
             interpretation = 'Medium GI (56–69) – moderate rise in blood sugar';
+        }
+
+        // GL bands: Low <10, Medium 11–19, High 20+
+        let glBadge = 'bg-success';
+        let glBandText = 'Low';
+        if (glValue !== null && glValue !== undefined) {
+            if (glValue >= 20) {
+                glBadge = 'bg-danger';
+                glBandText = 'High';
+            } else if (glValue >= 11) {
+                glBadge = 'bg-warning text-dark';
+                glBandText = 'Medium';
+            }
         }
 
         resEl.classList.remove('alert-info');
         resEl.classList.add(alertType);
 
-        const iaucInfo = (data && (data.iauc_food != null) && (data.iauc_glucose_ref != null))
-            ? `<p class="mb-0 text-muted small">IAUC (food): ${data.iauc_food} | IAUC (glucose ref): ${data.iauc_glucose_ref}</p>`
-            : '';
+        const iaucFood = (data && data.iauc_food != null) ? data.iauc_food : null;
+        const iaucGlu = (data && data.iauc_glucose_ref != null) ? data.iauc_glucose_ref : null;
 
         resContent.innerHTML = `
-            <div>
+            <div class="mb-2">
                 <h5 class="alert-heading mb-2">Prediction Result</h5>
-                <p class="mb-1"><strong>Predicted GI:</strong> <span class="fs-5 fw-bold">${ppgiValue}</span></p>
-                ${glValue !== null && glValue !== undefined ? `<p class="mb-2"><strong>Glycemic Load (GL):</strong> <span class="fs-5 fw-bold">${glValue}</span></p>` : ''}
-                <p class="mb-1"><em>${interpretation}</em></p>
-                ${iaucInfo}
             </div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small mb-1">IAUC (food)</div>
+                            <div class="fs-2 fw-bold">${iaucFood !== null ? iaucFood : '—'}</div>
+                            ${iaucGlu !== null ? `<div class="text-muted small">IAUC (glucose ref): ${iaucGlu}</div>` : ''}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small mb-1">GI</div>
+                            <div class="fs-2 fw-bold">${ppgiValue}</div>
+                            <span class="badge ${giBadge}">${giBandText}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm">
+                        <div class="card-body text-center">
+                            <div class="text-muted small mb-1">GL</div>
+                            <div class="fs-2 fw-bold">${glValue !== null && glValue !== undefined ? glValue : '—'}</div>
+                            ${glValue !== null && glValue !== undefined ? `<span class="badge ${glBadge}">${glBandText}</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="mt-3 mb-0"><em>${interpretation}</em></p>
         `;
         // Reveal download button now that we have a saved last result
         const dl = document.getElementById('download-csv');

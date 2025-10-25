@@ -128,18 +128,66 @@
                     content.classList.remove("d-none");
                     empty.classList.add("d-none");
                     const rows = [];
-                    rows.push(`<div><strong>GI:</strong> ${r.ppgi}</div>`);
-                    if (r.gl != null) {
-                        rows.push(`<div><strong>GL:</strong> ${r.gl}</div>`);
-                    }
+                    // Cards for IAUC, GI, GL with badges
+                    const gi = r.ppgi;
+                    const gl = r.gl;
+                    const giBadge =
+                        gi >= 70
+                            ? "badge bg-danger"
+                            : gi >= 56
+                            ? "badge bg-warning text-dark"
+                            : "badge bg-success";
+                    const giBandText =
+                        gi >= 70 ? "High" : gi >= 56 ? "Medium" : "Low";
+                    const glBadge =
+                        gl >= 20
+                            ? "badge bg-danger"
+                            : gl >= 11
+                            ? "badge bg-warning text-dark"
+                            : "badge bg-success";
+                    const glBandText =
+                        gl >= 20 ? "High" : gl >= 11 ? "Medium" : "Low";
+
+                    rows.push(
+                        `<div class="row g-3">` +
+                            `<div class="col-md-4"><div class="card h-100 border-0 shadow-sm"><div class="card-body text-center">` +
+                            `<div class="text-muted small mb-1">IAUC (food)</div>` +
+                            `<div class="fs-5 fw-bold">${
+                                r.iauc_food != null ? r.iauc_food : "—"
+                            }</div>` +
+                            `${
+                                r.iauc_glucose_ref != null
+                                    ? `<div class='text-muted small'>IAUC (glucose ref): ${r.iauc_glucose_ref}</div>`
+                                    : ""
+                            }` +
+                            `</div></div></div>` +
+                            `<div class="col-md-4"><div class="card h-100 border-0 shadow-sm"><div class="card-body text-center">` +
+                            `<div class="text-muted small mb-1">GI</div>` +
+                            `<div class="fs-5 fw-bold">${
+                                gi != null ? gi : "—"
+                            }</div>` +
+                            `${
+                                gi != null
+                                    ? `<span class=\"${giBadge}\">${giBandText}</span>`
+                                    : ""
+                            }` +
+                            `</div></div></div>` +
+                            `<div class="col-md-4"><div class="card h-100 border-0 shadow-sm"><div class="card-body text-center">` +
+                            `<div class="text-muted small mb-1">GL</div>` +
+                            `<div class="fs-5 fw-bold">${
+                                gl != null ? gl : "—"
+                            }</div>` +
+                            `${
+                                gl != null
+                                    ? `<span class=\"${glBadge}\">${glBandText}</span>`
+                                    : ""
+                            }` +
+                            `</div></div></div>` +
+                            `</div>`
+                    );
                     if (r.carbs_per_serving != null) {
                         rows.push(
-                            `<div><strong>Carbs per serving (g):</strong> ${r.carbs_per_serving}</div>`
-                        );
-                    }
-                    if (r.iauc_food != null && r.iauc_glucose_ref != null) {
-                        rows.push(
-                            `<div><strong>IAUC (food):</strong> ${r.iauc_food} &nbsp; <strong>IAUC (glucose ref):</strong> ${r.iauc_glucose_ref}</div>`
+                            `<div class="mt-2"><strong>Carbs per serving (g):</strong> ${r.carbs_per_serving}</div>`
                         );
                     }
                     if (r.timestamp)
@@ -156,21 +204,29 @@
                             `<span class="me-3"><strong>WC:</strong> ${
                                 inp.waist_circumference ?? ""
                             }</span>` +
-                            `<span class="me-3"><strong>Carb (per 100g):</strong> ${
-                                inp.carb ?? ""
-                            }</span>` +
+                            `${
+                                r.carb_per_100g != null
+                                    ? `<span class='me-3'><strong>Carb (per 100g):</strong> ${r.carb_per_100g}</span>`
+                                    : ""
+                            }` +
                             `<span class=\"me-3\"><strong>Portion (g):</strong> ${
                                 inp.portion_g ?? ""
                             }</span>` +
-                            `<span class="me-3"><strong>Protein:</strong> ${
-                                inp.protein ?? ""
-                            }</span>` +
-                            `<span class="me-3"><strong>Fat:</strong> ${
-                                inp.fat ?? ""
-                            }</span>` +
-                            `<span class="me-3"><strong>Fiber:</strong> ${
-                                inp.dietary_fiber ?? ""
-                            }</span>` +
+                            `${
+                                r.protein_per_100g != null
+                                    ? `<span class='me-3'><strong>Protein (per 100g):</strong> ${r.protein_per_100g}</span>`
+                                    : ""
+                            }` +
+                            `${
+                                r.fat_per_100g != null
+                                    ? `<span class='me-3'><strong>Fat (per 100g):</strong> ${r.fat_per_100g}</span>`
+                                    : ""
+                            }` +
+                            `${
+                                r.dietary_fiber_per_100g != null
+                                    ? `<span class='me-3'><strong>Fiber (per 100g):</strong> ${r.dietary_fiber_per_100g}</span>`
+                                    : ""
+                            }` +
                             `</div>`
                     );
                     fields.innerHTML = rows.join("");
