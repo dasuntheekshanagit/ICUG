@@ -86,7 +86,7 @@ async function predict() {
             interpretation = 'Medium GI (56–69) – moderate rise in blood sugar';
         }
 
-        // GL bands: Low <10, Medium 11–19, High 20+
+        // GL bands: Low ≤10, Medium 11–19, High ≥20 (color codes: green, yellow, red)
         let glBadge = 'bg-success';
         let glBandText = 'Low';
         if (glValue !== null && glValue !== undefined) {
