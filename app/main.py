@@ -14,8 +14,9 @@ import pandas as pd
 
 app = FastAPI(title="PPGI FastAPI")
 
-# Serve the static frontend from the "static" directory
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Serve the static frontend from the project "static" directory (absolute path for portability)
+_STATIC_DIR = (Path(__file__).parent.parent / "static").resolve()
+app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
 class PredictInput(BaseModel):
     gender: str = "Male"
