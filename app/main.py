@@ -14,9 +14,8 @@ import pandas as pd
 
 app = FastAPI(title="PPGI FastAPI")
 
-# Serve the static frontend from the project "static" directory (absolute path for portability)
-_STATIC_DIR = (Path(__file__).parent.parent / "static").resolve()
-app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
+# Serve the static frontend from the "static" directory (reverted to relative for Railway)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class PredictInput(BaseModel):
     gender: str = "Male"
@@ -39,7 +38,7 @@ class PredictInput(BaseModel):
     # will convert them to per-100g before passing to the model.
     nutrients_per_serving: bool = False
 
-_lgb_model: Optional[object] = None
+_rf_model: Optional[object] = None
 _feature_columns: Optional[list] = None
 _last_result: Optional[dict] = None
 
@@ -76,50 +75,46 @@ def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def _load_lgb_model():
-    """Lazy-load LightGBM and the model file.
-
-    Raises a RuntimeError with a helpful message if LightGBM or libgomp is missing.
-    """
-    global _lgb_model, _feature_columns
-    if _lgb_model is not None:
-        return _lgb_model
+def _load_rf_model():
+    """Lazy-load Random Forest model from joblib, capture feature columns if available."""
+    global _rf_model, _feature_columns
+    if _rf_model is not None:
+        return _rf_model
 
     try:
-        import importlib
-        lgb = importlib.import_module('lightgbm')
-    except Exception as ie:
-        raise RuntimeError(
-            "LightGBM is unavailable in this environment. If deploying on a minimal Linux image, install libgomp (e.g., apt-get install -y libgomp1 or apk add libgomp) or use the provided Dockerfile."
-        ) from ie
+        import joblib  # scikit-learn models are typically saved with joblib
+    except Exception as e:
+        raise RuntimeError("joblib is required to load the RandomForest model.") from e
 
     # Model path preference: project root then NoteBooks
     root = Path(__file__).parent.parent
-    candidates = [root / 'lightgbm_model.txt', root / 'NoteBooks' / 'lightgbm_model.txt']
+    candidates = [root / 'random_forest_model.joblib', root / 'NoteBooks' / 'random_forest_model.joblib']
     model_path = None
     for c in candidates:
         if c.exists():
             model_path = c
             break
     if model_path is None:
-        raise FileNotFoundError('lightgbm_model.txt not found in project root or NoteBooks/')
+        raise FileNotFoundError('random_forest_model.joblib not found in project root or NoteBooks/')
 
+    model = joblib.load(str(model_path))
+
+    # Try to detect feature names used during training (scikit-learn >=1.0)
+    _feature_columns = None
     try:
-        model = lgb.Booster(model_file=str(model_path))
-    except Exception as e:
-        # Common case: libgomp missing in the OS
-        raise RuntimeError(
-            "Failed to load LightGBM model. Ensure system dependency libgomp.so.1 is installed (Debian/Ubuntu: libgomp1, Alpine: libgomp)."
-        ) from e
-
-    _lgb_model = model
-
-    # If the model has feature_name stored, use it; otherwise will infer later
-    try:
-        _feature_columns = model.feature_name()
+        if hasattr(model, 'feature_names_in_'):
+            _feature_columns = list(model.feature_names_in_)
+        elif isinstance(model, tuple) and len(model) == 2:
+            # Optional: support (model, feature_columns)
+            m, cols = model
+            _rf_model = m
+            _feature_columns = list(cols)
+            return _rf_model
     except Exception:
         _feature_columns = None
-    return _lgb_model
+
+    _rf_model = model
+    return _rf_model
 
 def _build_feature_frame(payload: PredictInput) -> pd.DataFrame:
     # Map API fields to the training feature schema
@@ -185,7 +180,7 @@ async def predict(payload: PredictInput):
         return _build_feature_frame(temp)
 
     try:
-        model = _load_lgb_model()
+        model = _load_rf_model()
 
         # Determine how to interpret the user-provided nutrient fields.
         # If nutrients_per_serving=True, payload.carb/protein/fat/fiber are per-serving
@@ -210,11 +205,11 @@ async def predict(payload: PredictInput):
         else:
             # Payload nutrients are already per-100g
             X_food = _build_feature_frame(payload)
-        iauc_food = float(model.predict(X_food)[0])
+        iauc_food = float(model.predict(X_food.values)[0])
 
         # IAUC for 100g glucose reference (100g carb, others 0)
         X_glu = _frame_with_override_nutrients(payload, carb=100.0, prot=0.0, fat=0.0, fiber=0.0)
-        iauc_glu = float(model.predict(X_glu)[0])
+        iauc_glu = float(model.predict(X_glu.values)[0])
 
         # Guard against zero/negative reference
         if iauc_glu <= 0:
@@ -250,7 +245,7 @@ async def predict(payload: PredictInput):
             "iauc_food": round(iauc_food, 4),
             "iauc_glucose_ref": round(iauc_glu, 4),
             "input_summary": payload.dict(),
-            "source": 'lightgbm',
+            "source": 'random_forest',
             "timestamp": datetime.utcnow().isoformat() + 'Z'
         }
 

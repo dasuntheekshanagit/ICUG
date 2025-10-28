@@ -6,5 +6,6 @@ Pillow
 httpx
 numpy
 pandas
-lightgbm
+scikit-learn
+joblib
 gunicorn
