@@ -1,0 +1,16 @@
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+iacu/
+.git/
+*.pyc
+*.pyo
+*.pyd
+*.log
+node_modules/
+dist/
+build/
+*.egg-info/
+NoteBooks/

@@ -34,21 +34,25 @@ Notes:
 -   If your cloud sets a different env var for port, adapt `$PORT` accordingly.
 -   A `Procfile` is included with a `web` process using this command.
 
-## Minimal Dockerfile (optional)
+## Docker (recommended for cloud)
 
-If your provider uses Docker, create a `Dockerfile` like below:
+This repo includes a `Dockerfile` that installs LightGBM’s system dependency and runs the app with Gunicorn:
 
 ```
 FROM python:3.13-slim
+# Install OpenMP runtime required by LightGBM
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends libgomp1 \
+	&& rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY requirements.txt .
+COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 ENV PORT=8000
-CMD gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:${PORT} --workers 2 --timeout 60
+CMD gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:${PORT} --workers ${WEB_CONCURRENCY:-2} --timeout 60
 ```
 
-Then build and run locally:
+Build and run locally:
 
 ```
 docker build -t ppgi-app .
@@ -69,4 +73,12 @@ Install the OpenMP runtime in your container or build image:
 -   Alpine Linux: `apk add --no-cache libgomp`
 -   Red Hat/CentOS: `yum install -y libgomp`
 
-Alternatively, use the Dockerfile above, or choose a base image that includes GCC runtime libraries.
+Alternatively, deploy with the included Dockerfile so `libgomp1` is installed in the container.
+
+For buildpack-based PaaS (e.g., Heroku), ensure the OpenMP runtime is installed by adding the apt buildpack and an `Aptfile` with:
+
+```
+libgomp1
+```
+
+Then place the apt buildpack before the Python buildpack.
