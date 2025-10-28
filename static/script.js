@@ -140,6 +140,13 @@ async function predict() {
             </div>
             <p class="mt-3 mb-0"><em>${interpretation}</em></p>
         `;
+        // If backend used a fallback source (no model), show a subtle notice
+        if (data && data.source && data.source !== 'lightgbm') {
+            const note = document.createElement('div');
+            note.className = 'mt-2 small text-warning';
+            note.textContent = 'Note: Using fallback estimation (model not available). Results are approximate.';
+            resContent.appendChild(note);
+        }
         // Reveal download button now that we have a saved last result
         const dl = document.getElementById('download-csv');
         if (dl) dl.classList.remove('d-none');

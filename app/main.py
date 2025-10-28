@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
-import random
 from pathlib import Path
 import os
 from typing import Optional
@@ -190,7 +189,13 @@ async def predict(payload: PredictInput):
         # Determine how to interpret the user-provided nutrient fields.
         # If nutrients_per_serving=True, payload.carb/protein/fat/fiber are per-serving
         # and must be converted to per-100g before feeding the model.
-        if getattr(payload, 'nutrients_per_serving', False) and float(payload.portion_g or 0.0) > 0:
+        if getattr(payload, 'nutrients_per_serving', False):
+            # Validate portion for per-serving conversion
+            if float(payload.portion_g or 0.0) <= 0:
+                return JSONResponse(
+                    {"detail": "Invalid portion_g for per-serving nutrients: must be > 0 grams."},
+                    status_code=400,
+                )
             # Convert per-serving -> per-100g
             portion = float(payload.portion_g)
             carb_per_100g = float(payload.carb) * 100.0 / portion
@@ -253,39 +258,15 @@ async def predict(payload: PredictInput):
         return JSONResponse(result)
 
     except Exception as e:
-        # Fallback to a realistic GI-like range and include error for visibility
-        predicted_ppgi = random.uniform(40.0, 110.0)
-
-        if getattr(payload, 'nutrients_per_serving', False):
-            carbs_per_serving = float(payload.carb or 0.0)
-            carb_per_100g_value = round((float(payload.carb or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.carb or 0.0), 2)
-            protein_per_100g_value = round((float(payload.protein or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.protein or 0.0), 2)
-            fat_per_100g_value = round((float(payload.fat or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.fat or 0.0), 2)
-            fiber_per_100g_value = round((float(payload.dietary_fiber or 0.0) * 100.0 / float(payload.portion_g or 100.0)), 2) if float(payload.portion_g or 0.0) > 0 else round(float(payload.dietary_fiber or 0.0), 2)
-        else:
-            carbs_per_serving = float(payload.carb or 0.0) * float(payload.portion_g or 0.0) / 100.0
-            carb_per_100g_value = round(float(payload.carb or 0.0), 2)
-            protein_per_100g_value = round(float(payload.protein or 0.0), 2)
-            fat_per_100g_value = round(float(payload.fat or 0.0), 2)
-            fiber_per_100g_value = round(float(payload.dietary_fiber or 0.0), 2)
-
-        predicted_gl = (predicted_ppgi * carbs_per_serving) / 100.0
-
-        result = {
-            "ppgi": round(predicted_ppgi, 2),
-            "gl": round(predicted_gl, 2),
-            "carbs_per_serving": round(carbs_per_serving, 2),
-            "carb_per_100g": carb_per_100g_value,
-            "protein_per_100g": protein_per_100g_value,
-            "fat_per_100g": fat_per_100g_value,
-            "dietary_fiber_per_100g": fiber_per_100g_value,
-            "input_summary": payload.dict(),
-            "source": 'fallback_random',
-            "warning": f"Model prediction failed: {str(e)}",
-            "timestamp": datetime.utcnow().isoformat() + 'Z'
-        }
-        _last_result = result
-        return JSONResponse(result)
+        # Production behavior: do not generate synthetic predictions; return an error
+        return JSONResponse(
+            {
+                "detail": "Prediction failed. Please try again later.",
+                "error": str(e),
+                "error_class": e.__class__.__name__,
+            },
+            status_code=500,
+        )
 
 # Route for the main prediction page
 @app.get("/", response_class=FileResponse)

@@ -229,6 +229,12 @@
                             }` +
                             `</div>`
                     );
+                    // Append fallback notice if applicable
+                    if (r.source && r.source !== "lightgbm") {
+                        rows.push(
+                            `<div class="small text-warning">Note: Using fallback estimation (model not available). Results are approximate.</div>`
+                        );
+                    }
                     fields.innerHTML = rows.join("");
                 } catch (e) {
                     document.getElementById(
