@@ -139,17 +139,6 @@
                             <div class="row g-3">
                                 <div class="col-md-6">
                                     <label
-                                        for="gender"
-                                        class="form-label fw-semibold"
-                                        >Gender</label
-                                    >
-                                    <select id="gender" class="form-select">
-                                        <option>Male</option>
-                                        <option>Female</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label
                                         for="age"
                                         class="form-label fw-semibold"
                                         >Age (years)</label
@@ -159,117 +148,62 @@
                                         type="number"
                                         class="form-control"
                                         value="30"
-                                    />
-                                </div>
-                                <div class="col-md-6">
-                                    <label
-                                        for="weight"
-                                        class="form-label fw-semibold"
-                                        >Weight (kg)</label
-                                    >
-                                    <input
-                                        id="weight"
-                                        type="number"
-                                        class="form-control"
-                                        value="70"
-                                        step="0.1"
+                                        min="0"
                                     />
                                 </div>
                                 <div class="col-md-6">
                                     <label
                                         for="wc"
                                         class="form-label fw-semibold"
-                                        >Waist Circumference (cm)</label
+                                        >Waist Circumference (cm)
+                                        <span class="text-muted small"
+                                            >(optional)</span
+                                        ></label
                                     >
                                     <input
                                         id="wc"
                                         type="number"
                                         class="form-control"
-                                        value="80"
+                                        value=""
                                         step="0.1"
+                                        placeholder="e.g., 80"
                                     />
                                 </div>
                                 <div class="col-md-6">
                                     <label
-                                        for="birth_place"
+                                        for="weight"
                                         class="form-label fw-semibold"
-                                        >Birth Place</label
+                                        >Weight (kg)
+                                        <span class="text-muted small"
+                                            >(optional)</span
+                                        ></label
                                     >
                                     <input
-                                        id="birth_place"
-                                        type="text"
+                                        id="weight"
+                                        type="number"
                                         class="form-control"
-                                        placeholder="e.g., Kandy, Sri Lanka"
+                                        value=""
+                                        step="0.1"
+                                        placeholder="e.g., 70"
                                     />
                                 </div>
                                 <div class="col-md-6">
                                     <label
-                                        for="blood_group"
+                                        for="height"
                                         class="form-label fw-semibold"
-                                        >Blood Group</label
+                                        >Height (cm)
+                                        <span class="text-muted small"
+                                            >(optional)</span
+                                        ></label
                                     >
-                                    <select
-                                        id="blood_group"
-                                        class="form-select"
-                                    >
-                                        <option>A+</option>
-                                        <option>A-</option>
-                                        <option>B+</option>
-                                        <option>B-</option>
-                                        <option>AB+</option>
-                                        <option>AB-</option>
-                                        <option>O+</option>
-                                        <option>O-</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label
-                                        for="family_history"
-                                        class="form-label fw-semibold"
-                                        >Family History of Diabetes</label
-                                    >
-                                    <select
-                                        id="family_history"
-                                        class="form-select"
-                                    >
-                                        <option>No</option>
-                                        <option>Yes - Mother</option>
-                                        <option>Yes - Father</option>
-                                        <option>Yes - Father, Mother</option>
-                                        <option>Yes - Other</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label
-                                        for="physical_activity"
-                                        class="form-label fw-semibold"
-                                        >Physical Activity Level</label
-                                    >
-                                    <select
-                                        id="physical_activity"
-                                        class="form-select"
-                                    >
-                                        <option
-                                            value="Light ( Only Day-to-Day activities)"
-                                        >
-                                            Light ( Only Day-to-Day activities)
-                                        </option>
-                                        <option value="Heavy">Heavy</option>
-                                        <option value="Light">Light</option>
-                                        <option value="Moderate">
-                                            Moderate
-                                        </option>
-                                        <option
-                                            value="Moderate (Home workouts)"
-                                        >
-                                            Moderate (Home workouts)
-                                        </option>
-                                        <option
-                                            value="Heavy (Gym workouts or Sports)"
-                                        >
-                                            Heavy (Gym workouts or Sports)
-                                        </option>
-                                    </select>
+                                    <input
+                                        id="height"
+                                        type="number"
+                                        class="form-control"
+                                        value=""
+                                        step="0.1"
+                                        placeholder="e.g., 170"
+                                    />
                                 </div>
                             </div>
                         </div>

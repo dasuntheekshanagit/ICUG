@@ -3,7 +3,6 @@ from pydantic import BaseModel
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pathlib import Path
-import os
 from typing import Optional
 import io
 import csv
@@ -18,14 +17,10 @@ app = FastAPI(title="PPGI FastAPI")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 class PredictInput(BaseModel):
-    gender: str = "Male"
     age: float = 30.0
     weight: float = 70.0
+    height_cm: Optional[float] = None
     waist_circumference: float = 80.0
-    birth_place: str = ""
-    blood_group: str = "Unknown"
-    family_history: str = "No"
-    physical_activity: str = "Sedentary"
     food_item: str = ""
     carb: float = 0.0
     protein: float = 0.0
@@ -40,7 +35,9 @@ class PredictInput(BaseModel):
 
 _rf_model: Optional[object] = None
 _feature_columns: Optional[list] = None
+_is_pipeline: bool = False
 _last_result: Optional[dict] = None
+_target_encoder: Optional[object] = None
 
 def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
@@ -68,16 +65,31 @@ def _engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df['Fat_sq'] = df['Fat(g/100g)'] ** 2
     df['Dietary_Fiber_sq'] = df['Dietary Fiber(g/100g)'] ** 2
 
-    # Interactions with WC/HC
+    # Interactions with Age (to mirror training features like nutrient_x_Age)
     nutrient_cols = ['Carb(g/100g)', 'Protien(g/100g)', 'Fat(g/100g)', 'Dietary Fiber(g/100g)']
+    if 'Age' in df.columns:
+        for nutrient in nutrient_cols:
+            df[f'{nutrient}_x_Age'] = df[nutrient] * df['Age']
+
+    # Interactions with BMI when available (to mirror training nutrient_x_BMI)
+    if 'BMI(kg/m2)' in df.columns:
+        for nutrient in nutrient_cols:
+            df[f'{nutrient}_x_BMI'] = df[nutrient] * df['BMI(kg/m2)']
+
+    # Interactions with WC/HC
     for nutrient in nutrient_cols:
         df[f'WC/HC_x_{nutrient}'] = df['WC/HC'] * df[nutrient]
 
     return df
 
 def _load_rf_model():
-    """Lazy-load Random Forest model from joblib, capture feature columns if available."""
-    global _rf_model, _feature_columns
+    """Lazy-load Random Forest model from joblib, and optional target encoder.
+
+    Captures feature columns if available and attempts to load a saved
+    target encoder (target_encoder.joblib) to reproduce training preprocessing
+    for categorical variables when not using a full Pipeline.
+    """
+    global _rf_model, _feature_columns, _is_pipeline, _target_encoder
     if _rf_model is not None:
         return _rf_model
 
@@ -86,72 +98,168 @@ def _load_rf_model():
     except Exception as e:
         raise RuntimeError("joblib is required to load the RandomForest model.") from e
 
-    # Model path preference: project root then NoteBooks
+    # Model path preference: prefer full Pipeline if available, otherwise RF model.
     root = Path(__file__).parent.parent
-    candidates = [root / 'random_forest_model.joblib', root / 'NoteBooks' / 'random_forest_model.joblib']
-    model_path = None
-    for c in candidates:
-        if c.exists():
-            model_path = c
-            break
-    if model_path is None:
-        raise FileNotFoundError('random_forest_model.joblib not found in project root or NoteBooks/')
-
-    model = joblib.load(str(model_path))
-
-    # Try to detect feature names used during training (scikit-learn >=1.0)
-    _feature_columns = None
+    # Ensure custom training modules (e.g., ml_pipeline.py) are importable when loading a Pipeline
     try:
-        if hasattr(model, 'feature_names_in_'):
-            _feature_columns = list(model.feature_names_in_)
-        elif isinstance(model, tuple) and len(model) == 2:
-            # Optional: support (model, feature_columns)
-            m, cols = model
-            _rf_model = m
-            _feature_columns = list(cols)
-            return _rf_model
+        import sys as _sys
+        nb_dir = root / 'NoteBooks'
+        if nb_dir.exists():
+            p = str(nb_dir)
+            if p not in _sys.path:
+                _sys.path.insert(0, p)
     except Exception:
-        _feature_columns = None
+        pass
+    candidates = [
+        root / 'NoteBooks' / 'out' / 'final_iauc_pipeline.joblib',
+        root / 'random_forest_model.joblib',
+        root / 'NoteBooks' / 'random_forest_model.joblib',
+    ]
+    # Attempt to load a saved target encoder if present
+    try:
+        if _target_encoder is None:
+            enc_cands = [
+                root / 'target_encoder.joblib',
+                root / 'NoteBooks' / 'out' / 'target_encoder.joblib',
+                root / 'NoteBooks' / 'target_encoder.joblib',
+            ]
+            for ec in enc_cands:
+                if ec.exists():
+                    try:
+                        _target_encoder = joblib.load(str(ec))
+                        break
+                    except Exception:
+                        continue
+    except Exception:
+        pass
+    last_err: Optional[Exception] = None
+    for c in candidates:
+        if not c.exists():
+            continue
+        try:
+            model = joblib.load(str(c))
+        except ModuleNotFoundError as e:
+            # If the pipeline refers to a custom module (e.g., ml_pipeline) that's not
+            # present in the server environment, skip this candidate and try next.
+            last_err = e
+            continue
+        except Exception as e:
+            last_err = e
+            continue
 
-    _rf_model = model
-    return _rf_model
+        # Loaded successfully; determine model type and feature info
+        try:
+            from sklearn.pipeline import Pipeline  # type: ignore
+            if isinstance(model, Pipeline):
+                _is_pipeline = True
+                _rf_model = model
+                return _rf_model
+            if hasattr(model, 'feature_names_in_'):
+                _feature_columns = list(model.feature_names_in_)
+            elif isinstance(model, tuple) and len(model) == 2:
+                m, cols = model
+                _rf_model = m
+                _feature_columns = list(cols)
+                return _rf_model
+        except Exception:
+            _feature_columns = None
+
+        _rf_model = model
+        return _rf_model
+
+    # If we got here, nothing loaded; surface a helpful message
+    if last_err is not None:
+        raise RuntimeError(
+            "Failed to load model. If using a saved Pipeline, ensure any custom modules used in training (e.g., ml_pipeline) are available at runtime; otherwise provide the bare RandomForest model artifact."
+        ) from last_err
+    raise FileNotFoundError('Model not found. Expected final_iauc_pipeline.joblib (NoteBooks/out/) or random_forest_model.joblib (project root/NoteBooks/)')
 
 def _build_feature_frame(payload: PredictInput) -> pd.DataFrame:
-    # Map API fields to the training feature schema
-    # We don't have Height; BMI and WC/HC aren’t directly provided in the form.
-    # Approximate WC/HC using waist circumference and a default hip circ of 95 cm (assumption).
-    hip_circ = 95.0
+    # Build the input dataframe
+    hip_circ = 95.0  # Assumed hip circumference if not collected
     wc = float(payload.waist_circumference or 0.0)
     wth_ratio = (wc / hip_circ) if hip_circ else 0.0
 
-    df = pd.DataFrame([{
-        'Age': float(payload.age or 0.0),
-        'BMI(kg/m2)': np.nan,  # Not available in the form currently
-        'WC/HC': wth_ratio,
-        'Carb(g/100g)': float(payload.carb or 0.0),
-        'Protien(g/100g)': float(payload.protein or 0.0),
-        'Fat(g/100g)': float(payload.fat or 0.0),
-        'Dietary Fiber(g/100g)': float(payload.dietary_fiber or 0.0),
-        'Health Problem': 'None',
-        'Blood Group': payload.blood_group or 'Unknown'
-    }])
+    if _is_pipeline:
+        # For full Pipeline models: provide raw features, let the pipeline handle encoding/FE
+        # Compute BMI if height is provided
+        h_cm = float(payload.height_cm) if (getattr(payload, 'height_cm', None) not in (None, "")) else None
+        bmi = float(payload.weight) / ((h_cm/100.0)**2) if (h_cm and h_cm > 0) else np.nan
+        df_raw = pd.DataFrame([{
+            # We keep minimal UI; set stable defaults for categorical fields used in training
+            'Gender': 'Male',
+            'Age': float(payload.age or 0.0),
+            'Weight(kg)': float(payload.weight or 0.0),
+            'Height(cm)': h_cm if h_cm else np.nan,
+            'BMI(kg/m2)': bmi,
+            'Waist circumference': wc,
+            'Hip circumference': hip_circ,
+            'WC/HC': wth_ratio,
+            'Family history diabetics': 'No',
+            'Physical activity': 'Light',
+            'Health Problem': 'None',
+            'Alcoholic': 'No',
+            'Blood Group': 'Unknown',
+            'Carb(g/100g)': float(payload.carb or 0.0),
+            'Protien(g/100g)': float(payload.protein or 0.0),
+            'Fat(g/100g)': float(payload.fat or 0.0),
+            'Dietary Fiber(g/100g)': float(payload.dietary_fiber or 0.0),
+        }])
+        return df_raw
+    else:
+        # For bare RF models: do local feature engineering matching training as closely as feasible
+        # Compute BMI if height is provided
+        h_cm = float(payload.height_cm) if (getattr(payload, 'height_cm', None) not in (None, "")) else None
+        bmi = float(payload.weight) / ((h_cm/100.0)**2) if (h_cm and h_cm > 0) else np.nan
+        df = pd.DataFrame([{
+            'Age': float(payload.age or 0.0),
+            'Weight(kg)': float(payload.weight or 0.0),
+            'Height(cm)': h_cm if h_cm else np.nan,
+            'Waist circumference': wc,
+            'Hip circumference': hip_circ,
+            'BMI(kg/m2)': bmi,
+            'WC/HC': wth_ratio,
+            'Carb(g/100g)': float(payload.carb or 0.0),
+            'Protien(g/100g)': float(payload.protein or 0.0),
+            'Fat(g/100g)': float(payload.fat or 0.0),
+            'Dietary Fiber(g/100g)': float(payload.dietary_fiber or 0.0),
+            # Categorical columns present during training; use stable defaults
+            'Gender': 'Male',
+            'Family history diabetics': 'No',
+            'Physical activity': 'Light',
+            'Health Problem': 'None',
+            'Alcoholic': 'No',
+            'Blood Group': 'Unknown',
+        }])
 
-    # Feature engineering similar to notebook
-    df_eng = _engineer_features(df)
+        # Feature engineering similar to notebook
+        df_eng = _engineer_features(df)
 
-    # Drop columns that were dropped at train time if present
-    for drop_col in ['WC/HC', 'BMI(kg/m2)']:
-        if drop_col in df_eng.columns:
-            df_eng = df_eng.drop(columns=[drop_col])
+        # If a target encoder was saved and loaded, apply it now (transform only)
+        # NOTE: Encoder was fitted BEFORE dropping 'WC/HC' and 'BMI(kg/m2)' in the notebook,
+        # so preserve those columns for transform and drop them afterwards.
+        if _target_encoder is not None:
+            try:
+                df_enc = _target_encoder.transform(df_eng)
+                if isinstance(df_enc, pd.DataFrame):
+                    df_eng = df_enc
+            except Exception:
+                # If encoding fails, fall back to unencoded dataframe
+                pass
 
-    # Align to model features if known; otherwise pass engineered features as-is
-    if _feature_columns:
-        for col in _feature_columns:
-            if col not in df_eng.columns:
-                df_eng[col] = 0.0
-        df_eng = df_eng[_feature_columns]
+        # Drop columns that were dropped at train time if present (post-encoding)
+        for drop_col in ['WC/HC', 'BMI(kg/m2)']:
+            if drop_col in df_eng.columns:
+                df_eng = df_eng.drop(columns=[drop_col])
 
-    return df_eng
+        # Align to model features if known; otherwise pass engineered features as-is
+        if _feature_columns:
+            for col in _feature_columns:
+                if col not in df_eng.columns:
+                    df_eng[col] = 0.0
+            df_eng = df_eng[_feature_columns]
+
+        return df_eng
 
 @app.post("/api/predict")
 async def predict(payload: PredictInput):
@@ -223,12 +331,14 @@ async def predict(payload: PredictInput):
         else:
             # Payload nutrients are already per-100g
             X_food = _build_feature_frame(payload)
-        X_food = _prepare_X(X_food)
+        if not _is_pipeline:
+            X_food = _prepare_X(X_food)
         iauc_food = float(model.predict(X_food)[0])
 
         # IAUC for 100g glucose reference (100g carb, others 0)
         X_glu = _frame_with_override_nutrients(payload, carb=100.0, prot=0.0, fat=0.0, fiber=0.0)
-        X_glu = _prepare_X(X_glu)
+        if not _is_pipeline:
+            X_glu = _prepare_X(X_glu)
         iauc_glu = float(model.predict(X_glu)[0])
 
         # Guard against zero/negative reference
@@ -265,7 +375,7 @@ async def predict(payload: PredictInput):
             "iauc_food": round(iauc_food, 4),
             "iauc_glucose_ref": round(iauc_glu, 4),
             "input_summary": payload.dict(),
-            "source": 'random_forest',
+            "source": 'pipeline' if _is_pipeline else 'random_forest',
             "timestamp": datetime.utcnow().isoformat() + 'Z'
         }
 
@@ -349,8 +459,8 @@ async def last_result_csv():
 
     # Consistent column order
     cols = [
-        'gender','age','weight','waist_circumference','birth_place','blood_group',
-        'family_history','physical_activity','food_item','carb','protein','fat','dietary_fiber','portion_g',
+        'age','weight','height_cm','waist_circumference','food_item',
+        'carb','protein','fat','dietary_fiber','portion_g',
         'carb_per_100g','protein_per_100g','fat_per_100g','dietary_fiber_per_100g',
         'carbs_per_serving','ppgi','gl','iauc_food','iauc_glucose_ref','source','timestamp'
     ]

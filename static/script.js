@@ -3,14 +3,10 @@ async function predict() {
     const manualFoodName = document.getElementById('food_manual_name').value;
 
     const payload = {
-        gender: document.getElementById('gender').value,
         age: parseFloat(document.getElementById('age').value || 0),
-        weight: parseFloat(document.getElementById('weight').value || 0),
-        waist_circumference: parseFloat(document.getElementById('wc').value || 0),
-        birth_place: document.getElementById('birth_place').value,
-        blood_group: document.getElementById('blood_group').value,
-        family_history: document.getElementById('family_history').value,
-        physical_activity: document.getElementById('physical_activity').value,
+        weight: (document.getElementById('weight') && document.getElementById('weight').value !== '') ? parseFloat(document.getElementById('weight').value) : 0,
+        height_cm: (document.getElementById('height') && document.getElementById('height').value !== '') ? parseFloat(document.getElementById('height').value) : null,
+        waist_circumference: (document.getElementById('wc') && document.getElementById('wc').value !== '') ? parseFloat(document.getElementById('wc').value) : 0,
         food_item: (manualFoodName && manualFoodName.trim()) ? manualFoodName.trim() : (selectedFood || ''),
         portion_g: parseFloat(document.getElementById('portion').value || 100),
         nutrients_per_serving: Boolean(document.getElementById('nutrients_per_serving') && document.getElementById('nutrients_per_serving').checked),
