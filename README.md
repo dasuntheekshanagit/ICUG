@@ -19,12 +19,12 @@ Notes:
 
 ## Deploying to a cloud provider
 
-Most PaaS platforms (Render, Railway, Fly.io, Heroku-like) ask for a Start Command. Use Gunicorn with Uvicorn workers:
+Most PaaS platforms (Render, Railway, Fly.io, Heroku-like) ask for a Start Command. Use the included portable launcher:
 
-Start Command (safe for environments without shell expansion):
+Start Command (portable):
 
 ```
-sh -c 'exec gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --timeout 60'
+sh ./start.sh
 ```
 
 Notes:
@@ -36,7 +36,7 @@ Notes:
 
 ## Docker (recommended for cloud)
 
-This repo includes a `Dockerfile` that installs LightGBM’s system dependency and runs the app with Gunicorn:
+This repo includes a `Dockerfile` that installs LightGBM’s system dependency and runs the app with Gunicorn via `start.sh`:
 
 ```
 FROM python:3.13-slim
@@ -50,7 +50,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 ENV PORT=8000
 ENV WEB_CONCURRENCY=2
-CMD gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:${PORT} --workers ${WEB_CONCURRENCY} --timeout 60
+CMD ["sh", "./start.sh"]
 ```
 
 Build and run locally:
@@ -83,3 +83,8 @@ libgomp1
 ```
 
 Then place the apt buildpack before the Python buildpack.
+
+Environment variables:
+
+-   `PORT`: listening port (platforms set this automatically). Default 8000.
+-   `WEB_CONCURRENCY`: Gunicorn worker processes. Default 2.
