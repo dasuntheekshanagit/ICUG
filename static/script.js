@@ -140,8 +140,10 @@ async function predict() {
             </div>
             <p class="mt-3 mb-0"><em>${interpretation}</em></p>
         `;
-        // If backend used a fallback source (no model), show a subtle notice
-        if (data && data.source && data.source !== 'lightgbm') {
+        // If backend explicitly reports a 'fallback' source, show a subtle notice
+        // Previously this checked for source!=='lightgbm', which incorrectly
+        // flagged valid models like 'random_forest'.
+        if (data && data.source && data.source === 'fallback') {
             const note = document.createElement('div');
             note.className = 'mt-2 small text-warning';
             note.textContent = 'Note: Using fallback estimation (model not available). Results are approximate.';

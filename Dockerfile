@@ -1,9 +1,6 @@
 FROM python:3.13-slim
 
-# Install system dependencies required by LightGBM (OpenMP runtime)
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
+# No extra OS packages required for scikit-learn + joblib
 
 WORKDIR /app
 

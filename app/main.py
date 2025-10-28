@@ -179,6 +179,24 @@ async def predict(payload: PredictInput):
         temp = PredictInput(**temp_dict)
         return _build_feature_frame(temp)
 
+    def _prepare_X(df: pd.DataFrame) -> pd.DataFrame:
+        """Align/features and coerce to numeric to satisfy the RandomForest input.
+
+        - If the model exposes feature_names_in_, add any missing columns with 0 and order columns.
+        - Then coerce all values to numeric (non-numeric become NaN) and fill NaN with 0.0 to
+          avoid string-to-float errors.
+        """
+        global _feature_columns
+        if _feature_columns:
+            for col in _feature_columns:
+                if col not in df.columns:
+                    df[col] = 0.0
+            # Drop any extra columns not used by the model
+            df = df[_feature_columns]
+        # Ensure purely numeric matrix and no NaNs
+        df = df.apply(pd.to_numeric, errors='coerce').fillna(0.0)
+        return df
+
     try:
         model = _load_rf_model()
 
@@ -205,11 +223,13 @@ async def predict(payload: PredictInput):
         else:
             # Payload nutrients are already per-100g
             X_food = _build_feature_frame(payload)
-        iauc_food = float(model.predict(X_food.values)[0])
+        X_food = _prepare_X(X_food)
+        iauc_food = float(model.predict(X_food)[0])
 
         # IAUC for 100g glucose reference (100g carb, others 0)
         X_glu = _frame_with_override_nutrients(payload, carb=100.0, prot=0.0, fat=0.0, fiber=0.0)
-        iauc_glu = float(model.predict(X_glu.values)[0])
+        X_glu = _prepare_X(X_glu)
+        iauc_glu = float(model.predict(X_glu)[0])
 
         # Guard against zero/negative reference
         if iauc_glu <= 0:
