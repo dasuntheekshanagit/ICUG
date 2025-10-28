@@ -21,10 +21,10 @@ Notes:
 
 Most PaaS platforms (Render, Railway, Fly.io, Heroku-like) ask for a Start Command. Use Gunicorn with Uvicorn workers:
 
-Start Command:
+Start Command (safe for environments without shell expansion):
 
 ```
-gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:$PORT --workers ${WEB_CONCURRENCY:-2} --timeout 60
+sh -c 'exec gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-2} --timeout 60'
 ```
 
 Notes:
@@ -49,7 +49,8 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 ENV PORT=8000
-CMD gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:${PORT} --workers ${WEB_CONCURRENCY:-2} --timeout 60
+ENV WEB_CONCURRENCY=2
+CMD gunicorn -k uvicorn.workers.UvicornWorker app.main:app --bind 0.0.0.0:${PORT} --workers ${WEB_CONCURRENCY} --timeout 60
 ```
 
 Build and run locally:
