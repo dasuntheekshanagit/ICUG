@@ -1,408 +1,427 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <title>PPGI - Personalized Prediction</title>
-        <!-- Bootstrap 5 CSS -->
-        <link
-            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
-            rel="stylesheet"
-        />
-        <!-- Bootstrap Icons -->
-        <link
-            rel="stylesheet"
-            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
-        />
-        <!-- Google Fonts -->
-        <link
-            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
-            rel="stylesheet"
-        />
-        <link rel="stylesheet" href="/static/style.css" />
-    </head>
-    <body>
-        <!-- Navigation Bar -->
-        <nav
-            class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm fixed-top"
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PPGI - Personalized Prediction</title>
+    <!-- Bootstrap 5 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <!-- Bootstrap Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css"
+    />
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+  <body>
+    <!-- Navigation Bar -->
+    <nav
+      class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm fixed-top"
+    >
+      <div class="container">
+        <a
+          class="navbar-brand fw-bold d-flex align-items-center gap-2"
+          href="/"
         >
-            <div class="container">
-                <a
-                    class="navbar-brand fw-bold d-flex align-items-center gap-2"
-                    href="/"
-                >
-                    <img
-                        src="/static/logo.jpeg"
-                        alt="Logo"
-                        style="
-                            height: 28px;
-                            width: auto;
-                            border-radius: 4px;
-                            object-fit: contain;
-                        "
+          <img
+            src="/static/logo.jpeg"
+            alt="Logo"
+            style="
+              height: 28px;
+              width: auto;
+              border-radius: 4px;
+              object-fit: contain;
+            "
+          />
+          <span>GlycoMe</span>
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="/introduction">Introduction</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/how-to">How to use</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link active fw-semibold" href="/calculate"
+                >Calculate personalized PPGI</a
+              >
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/saved">Saved results</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="/about">About us</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="hero-section">
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-lg-12 text-center">
+            <h1 class="display-4 fw-bold mb-3">Personalized PPGI Prediction</h1>
+            <p class="lead text-muted mb-4">
+              Predict your personalized postprandial glycemic index based on
+              your unique characteristics
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+      <div class="row">
+        <div class="col-lg-10 mx-auto">
+          <!-- Info Card -->
+          <div class="card shadow-sm border-0 mb-4">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-start">
+                <div class="flex-shrink-0">
+                  <i class="bi bi-lightbulb text-warning fs-2"></i>
+                </div>
+                <div class="flex-grow-1 ms-3">
+                  <h5 class="card-title fw-semibold">About This Tool</h5>
+                  <p class="card-text text-muted">
+                    Welcome to the Personalized Postprandial Glycemic Index
+                    (PPGI) Prediction tool. This application uses machine
+                    learning to predict how your body responds to different
+                    foods based on your personal characteristics. Enter your
+                    information below to get started.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Prediction Form -->
+          <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white py-3">
+              <h5 class="mb-0 fw-semibold">
+                <i class="bi bi-person-fill"></i> Personal Information
+              </h5>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label for="age" class="form-label fw-semibold"
+                    >Age (years)</label
+                  >
+                  <input
+                    id="age"
+                    type="number"
+                    class="form-control"
+                    value="30"
+                    min="0"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label for="wc" class="form-label fw-semibold"
+                    >Waist Circumference (cm)
+                    <span class="text-muted small">(optional)</span></label
+                  >
+                  <input
+                    id="wc"
+                    type="number"
+                    class="form-control"
+                    value=""
+                    step="0.1"
+                    placeholder="e.g., 80"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label for="weight" class="form-label fw-semibold"
+                    >Weight (kg)
+                    <span class="text-muted small">(optional)</span></label
+                  >
+                  <input
+                    id="weight"
+                    type="number"
+                    class="form-control"
+                    value=""
+                    step="0.1"
+                    placeholder="e.g., 70"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label for="height" class="form-label fw-semibold"
+                    >Height (cm)
+                    <span class="text-muted small">(optional)</span></label
+                  >
+                  <input
+                    id="height"
+                    type="number"
+                    class="form-control"
+                    value=""
+                    step="0.1"
+                    placeholder="e.g., 170"
+                  />
+                </div>
+                <!-- Additional optional features requested by user -->
+                <div class="col-12 mt-2"><hr /></div>
+                <div class="col-md-4">
+                  <label for="gender" class="form-label fw-semibold"
+                    >Gender</label
+                  >
+                  <select id="gender" class="form-select">
+                    <option value="">Prefer not to say</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="blood_group" class="form-label fw-semibold"
+                    >Blood Group</label
+                  >
+                  <select id="blood_group" class="form-select">
+                    <option value="unknown">Unknown</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="AB">AB</option>
+                    <option value="O">O</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <label for="physical_activity" class="form-label fw-semibold"
+                    >Physical activity</label
+                  >
+                  <select id="physical_activity" class="form-select">
+                    <option value="moderate">Moderate</option>
+                    <option value="low">Low</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="family_diabetes"
                     />
-                    <span>GlycoMe</span>
-                </a>
-                <button
-                    class="navbar-toggler"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#navbarNav"
-                >
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav ms-auto">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/introduction"
-                                >Introduction</a
-                            >
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/how-to">How to use</a>
-                        </li>
-                        <li class="nav-item">
-                            <a
-                                class="nav-link active fw-semibold"
-                                href="/calculate"
-                                >Calculate personalized PPGI</a
-                            >
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/saved">Saved results</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/about">About us</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
-
-        <!-- Hero Section -->
-        <div class="hero-section">
-            <div class="container">
-                <div class="row align-items-center">
-                    <div class="col-lg-12 text-center">
-                        <h1 class="display-4 fw-bold mb-3">
-                            Personalized PPGI Prediction
-                        </h1>
-                        <p class="lead text-muted mb-4">
-                            Predict your personalized postprandial glycemic
-                            index based on your unique characteristics
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="container my-5">
-            <div class="row">
-                <div class="col-lg-10 mx-auto">
-                    <!-- Info Card -->
-                    <div class="card shadow-sm border-0 mb-4">
-                        <div class="card-body p-4">
-                            <div class="d-flex align-items-start">
-                                <div class="flex-shrink-0">
-                                    <i
-                                        class="bi bi-lightbulb text-warning fs-2"
-                                    ></i>
-                                </div>
-                                <div class="flex-grow-1 ms-3">
-                                    <h5 class="card-title fw-semibold">
-                                        About This Tool
-                                    </h5>
-                                    <p class="card-text text-muted">
-                                        Welcome to the Personalized Postprandial
-                                        Glycemic Index (PPGI) Prediction tool.
-                                        This application uses machine learning
-                                        to predict how your body responds to
-                                        different foods based on your personal
-                                        characteristics. Enter your information
-                                        below to get started.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Prediction Form -->
-                    <div class="card shadow-sm border-0">
-                        <div class="card-header bg-primary text-white py-3">
-                            <h5 class="mb-0 fw-semibold">
-                                <i class="bi bi-person-fill"></i> Personal
-                                Information
-                            </h5>
-                        </div>
-                        <div class="card-body p-4">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label
-                                        for="age"
-                                        class="form-label fw-semibold"
-                                        >Age (years)</label
-                                    >
-                                    <input
-                                        id="age"
-                                        type="number"
-                                        class="form-control"
-                                        value="30"
-                                        min="0"
-                                    />
-                                </div>
-                                <div class="col-md-6">
-                                    <label
-                                        for="wc"
-                                        class="form-label fw-semibold"
-                                        >Waist Circumference (cm)
-                                        <span class="text-muted small"
-                                            >(optional)</span
-                                        ></label
-                                    >
-                                    <input
-                                        id="wc"
-                                        type="number"
-                                        class="form-control"
-                                        value=""
-                                        step="0.1"
-                                        placeholder="e.g., 80"
-                                    />
-                                </div>
-                                <div class="col-md-6">
-                                    <label
-                                        for="weight"
-                                        class="form-label fw-semibold"
-                                        >Weight (kg)
-                                        <span class="text-muted small"
-                                            >(optional)</span
-                                        ></label
-                                    >
-                                    <input
-                                        id="weight"
-                                        type="number"
-                                        class="form-control"
-                                        value=""
-                                        step="0.1"
-                                        placeholder="e.g., 70"
-                                    />
-                                </div>
-                                <div class="col-md-6">
-                                    <label
-                                        for="height"
-                                        class="form-label fw-semibold"
-                                        >Height (cm)
-                                        <span class="text-muted small"
-                                            >(optional)</span
-                                        ></label
-                                    >
-                                    <input
-                                        id="height"
-                                        type="number"
-                                        class="form-control"
-                                        value=""
-                                        step="0.1"
-                                        placeholder="e.g., 170"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Food Information -->
-                    <div class="card shadow-sm border-0 mt-4">
-                        <div class="card-header bg-success text-white py-3">
-                            <h5 class="mb-0 fw-semibold">
-                                <i class="bi bi-egg-fried"></i> Food Item
-                                Information
-                            </h5>
-                        </div>
-                        <div class="card-body p-4">
-                            <div class="row g-3">
-                                <div class="col-md-12">
-                                    <label
-                                        for="food_select"
-                                        class="form-label fw-semibold"
-                                        >Select Food Item</label
-                                    >
-                                    <select
-                                        id="food_select"
-                                        class="form-select"
-                                    >
-                                        <option value="">
-                                            -- Select a food --
-                                        </option>
-                                    </select>
-                                    <input
-                                        id="food_manual_name"
-                                        type="text"
-                                        class="form-control mt-2"
-                                        placeholder="Enter food name (manual)"
-                                        style="display: none"
-                                    />
-                                    <div class="form-check mt-2">
-                                        <input
-                                            class="form-check-input"
-                                            type="checkbox"
-                                            id="manual_toggle"
-                                        />
-                                        <label
-                                            class="form-check-label text-muted small"
-                                            for="manual_toggle"
-                                        >
-                                            Manual entry (enter custom food and
-                                            nutritional values)
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label
-                                        for="portion"
-                                        class="form-label fw-semibold"
-                                        >Portion size (g)</label
-                                    >
-                                    <input
-                                        id="portion"
-                                        type="number"
-                                        class="form-control"
-                                        step="1"
-                                        value="100"
-                                        placeholder="e.g., 150"
-                                    />
-                                </div>
-                                <div class="col-md-6 d-flex align-items-center">
-                                    <div class="form-check">
-                                        <input
-                                            class="form-check-input"
-                                            type="checkbox"
-                                            id="nutrients_per_serving"
-                                        />
-                                        <label
-                                            class="form-check-label small text-muted"
-                                            for="nutrients_per_serving"
-                                        >
-                                            I entered nutrients per serving (not
-                                            per 100 g)
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label
-                                        for="carb"
-                                        class="form-label fw-semibold"
-                                        >Carbohydrates (g/100g)</label
-                                    >
-                                    <input
-                                        id="carb"
-                                        type="number"
-                                        class="form-control"
-                                        step="0.1"
-                                        value="0"
-                                        placeholder="e.g., 14.0"
-                                    />
-                                </div>
-                                <div class="col-md-6">
-                                    <label
-                                        for="protein"
-                                        class="form-label fw-semibold"
-                                        >Protein (g/100g)</label
-                                    >
-                                    <input
-                                        id="protein"
-                                        type="number"
-                                        class="form-control"
-                                        step="0.1"
-                                        value="0"
-                                        placeholder="e.g., 0.3"
-                                    />
-                                </div>
-                                <div class="col-md-6">
-                                    <label
-                                        for="fat"
-                                        class="form-label fw-semibold"
-                                        >Fat (g/100g)</label
-                                    >
-                                    <input
-                                        id="fat"
-                                        type="number"
-                                        class="form-control"
-                                        step="0.1"
-                                        value="0"
-                                        placeholder="e.g., 0.2"
-                                    />
-                                </div>
-                                <div class="col-md-6">
-                                    <label
-                                        for="fiber"
-                                        class="form-label fw-semibold"
-                                        >Dietary Fiber (g/100g)</label
-                                    >
-                                    <input
-                                        id="fiber"
-                                        type="number"
-                                        class="form-control"
-                                        step="0.1"
-                                        value="0"
-                                        placeholder="e.g., 2.4"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Predict Button and Result -->
-                    <div class="text-center my-4">
-                        <button
-                            id="predict"
-                            class="btn btn-primary btn-lg px-5 py-3 shadow-sm"
-                        >
-                            <i class="bi bi-lightning-charge-fill"></i> Predict
-                            PPGI
-                        </button>
-                    </div>
-
-                    <div
-                        id="result"
-                        class="alert alert-info d-none shadow-sm"
-                        role="alert"
+                    <label class="form-check-label" for="family_diabetes"
+                      >Family history of diabetes</label
                     >
-                        <div class="d-flex align-items-center">
-                            <i class="bi bi-info-circle-fill fs-4 me-3"></i>
-                            <div id="result-content"></div>
-                        </div>
-                        <div class="mt-3 d-flex gap-2">
-                            <a
-                                id="download-csv"
-                                href="/api/last_result.csv"
-                                class="btn btn-sm btn-light d-none"
-                            >
-                                <i class="bi bi-download"></i> Download CSV
-                            </a>
-                            <a
-                                href="/saved"
-                                class="btn btn-sm btn-outline-light"
-                            >
-                                <i class="bi bi-journal-text"></i> View Saved
-                            </a>
-                        </div>
-                    </div>
+                  </div>
                 </div>
+                <div class="col-md-4">
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="health_problems"
+                    />
+                    <label class="form-check-label" for="health_problems"
+                      >Existing health problems</label
+                    >
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="alcoholic"
+                    />
+                    <label class="form-check-label" for="alcoholic"
+                      >Alcohol consumer</label
+                    >
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
+
+          <!-- Food Information -->
+          <div class="card shadow-sm border-0 mt-4">
+            <div class="card-header bg-success text-white py-3">
+              <h5 class="mb-0 fw-semibold">
+                <i class="bi bi-egg-fried"></i> Food Item Information
+              </h5>
+            </div>
+            <div class="card-body p-4">
+              <div class="row g-3">
+                <div class="col-md-12">
+                  <label for="food_select" class="form-label fw-semibold"
+                    >Select Food Item</label
+                  >
+                  <select id="food_select" class="form-select">
+                    <option value="">-- Select a food --</option>
+                  </select>
+                  <input
+                    id="food_manual_name"
+                    type="text"
+                    class="form-control mt-2"
+                    placeholder="Enter food name (manual)"
+                    style="display: none"
+                  />
+                  <div class="form-check mt-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="manual_toggle"
+                    />
+                    <label
+                      class="form-check-label text-muted small"
+                      for="manual_toggle"
+                    >
+                      Manual entry (enter custom food and nutritional values)
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label for="portion" class="form-label fw-semibold"
+                    >Portion size (g)</label
+                  >
+                  <input
+                    id="portion"
+                    type="number"
+                    class="form-control"
+                    step="1"
+                    value="100"
+                    placeholder="e.g., 150"
+                  />
+                </div>
+                <div class="col-md-6 d-flex align-items-center">
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="nutrients_per_serving"
+                    />
+                    <label
+                      class="form-check-label small text-muted"
+                      for="nutrients_per_serving"
+                    >
+                      I entered nutrients per serving (not per 100 g)
+                    </label>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label for="carb" class="form-label fw-semibold"
+                    >Carbohydrates (g/100g)</label
+                  >
+                  <input
+                    id="carb"
+                    type="number"
+                    class="form-control"
+                    step="0.1"
+                    value="0"
+                    placeholder="e.g., 14.0"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label for="protein" class="form-label fw-semibold"
+                    >Protein (g/100g)</label
+                  >
+                  <input
+                    id="protein"
+                    type="number"
+                    class="form-control"
+                    step="0.1"
+                    value="0"
+                    placeholder="e.g., 0.3"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label for="fat" class="form-label fw-semibold"
+                    >Fat (g/100g)</label
+                  >
+                  <input
+                    id="fat"
+                    type="number"
+                    class="form-control"
+                    step="0.1"
+                    value="0"
+                    placeholder="e.g., 0.2"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label for="fiber" class="form-label fw-semibold"
+                    >Dietary Fiber (g/100g)</label
+                  >
+                  <input
+                    id="fiber"
+                    type="number"
+                    class="form-control"
+                    step="0.1"
+                    value="0"
+                    placeholder="e.g., 2.4"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Predict Button and Result -->
+          <div class="text-center my-4">
+            <button
+              id="predict"
+              class="btn btn-primary btn-lg px-5 py-3 shadow-sm"
+            >
+              <i class="bi bi-lightning-charge-fill"></i> Predict PPGI
+            </button>
+          </div>
+
+          <div
+            id="result"
+            class="alert alert-info d-none shadow-sm"
+            role="alert"
+          >
+            <div class="d-flex align-items-center">
+              <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+              <div id="result-content"></div>
+            </div>
+            <div class="mt-3 d-flex gap-2">
+              <a
+                id="download-csv"
+                href="/api/last_result.csv"
+                class="btn btn-sm btn-light d-none"
+              >
+                <i class="bi bi-download"></i> Download CSV
+              </a>
+              <a href="/saved" class="btn btn-sm btn-outline-light">
+                <i class="bi bi-journal-text"></i> View Saved
+              </a>
+            </div>
+          </div>
         </div>
+      </div>
+    </div>
 
-        <!-- Footer -->
-        <footer class="footer-custom py-4 mt-5">
-            <div class="container text-center">
-                <p class="mb-0">
-                    <i class="bi bi-c-circle"></i> 2025 GlycoMe. Developed by
-                    the Department of Food Science and Technology, University of
-                    Peradeniya.
-                </p>
-            </div>
-        </footer>
+    <!-- Footer -->
+    <footer class="footer-custom py-4 mt-5">
+      <div class="container text-center">
+        <p class="mb-0">
+          <i class="bi bi-c-circle"></i> 2025 GlycoMe. Developed by the
+          Department of Food Science and Technology, University of Peradeniya.
+        </p>
+      </div>
+    </footer>
 
-        <!-- Bootstrap 5 JS Bundle -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="/static/script.js"></script>
-    </body>
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/script.js"></script>
+  </body>
 </html>
